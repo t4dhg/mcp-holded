@@ -1,0 +1,49 @@
+{
+  "name": "@t4dhg/mcp-holded",
+  "version": "1.0.0",
+  "description": "MCP server for the Holded API v2 (Bearer auth): contacts, invoices, purchases, products, services, payments, plus a generic request tool for any v2 endpoint.",
+  "type": "module",
+  "bin": {
+    "mcp-holded": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "smoke": "node smoke-test.mjs"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "holded",
+    "holded-api",
+    "invoicing",
+    "accounting",
+    "erp",
+    "spain",
+    "claude",
+    "llm"
+  ],
+  "author": "Taig Mac Carthy <taigmaccarthy@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/t4dhg/mcp-holded#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/t4dhg/mcp-holded.git"
+  },
+  "bugs": {
+    "url": "https://github.com/t4dhg/mcp-holded/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  }
+}
