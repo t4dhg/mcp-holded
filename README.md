@@ -46,7 +46,7 @@ Create a Personal Access Token in Holded under Settings, Developers, API. Use th
 | `holded_list_services` | List services. |
 | `holded_list_payments` | List payments. |
 | `holded_get_by_id` | Fetch one record by id from any v2 resource. |
-| `holded_request` | Low-level access to any v2 endpoint (`method`, `path`, `query`, `body`). |
+| `holded_request` | Low-level access to any v2 endpoint (`method`, `path`, `query`, `body`). `DELETE` and `PUT` require `confirm: true`; the first call returns the exact request and sends nothing. |
 
 The list tools accept optional `page`, `limit`, and `query` (free-text search). Holded's v2 API exposes far more than the resources with dedicated tools above; use `holded_request` to reach any of them, for example `{ "method": "GET", "path": "/numberingseries" }`.
 
@@ -66,3 +66,11 @@ HOLDED_API_KEY=pat_..._... npm run smoke
 ## License
 
 MIT
+
+## Safety
+
+`holded_request` can reach every write endpoint Holded exposes. `DELETE` removes a record for good and `PUT` overwrites one, so both are refused unless the call carries `confirm: true`. The refused call makes no request and returns the exact method, URL and body that would be sent, so the confirmation is informed. `GET` and `POST` are not gated. This reduces accidents; it is not an authorization boundary, and the API key grants whatever Holded grants it. Report security issues through [GitHub Security Advisories](https://github.com/t4dhg/mcp-holded/security/advisories/new); see [SECURITY.md](SECURITY.md).
+
+## Releasing
+
+Releases are staged by CI and promoted by a human. Push a `vX.Y.Z` tag; the publish workflow authenticates to npm over OIDC as a trusted publisher and runs `npm stage publish`. Nothing is installable until a maintainer runs `npm stage approve <stage-id>` locally and proves 2FA there.

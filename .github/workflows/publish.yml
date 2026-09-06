@@ -1,0 +1,48 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Mints the OIDC token that authenticates the publish. Without this,
+      # trusted publishing cannot work.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          # Trusted publishing requires npm >= 11.5.1 and Node >= 22.14.0.
+          # Node 24 ships npm 11.x. Node 20 and 22 ship npm 10.x and cannot
+          # authenticate over OIDC, which is why publishes here used a token.
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          # npm's guidance: never cache in release builds.
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+
+      # No NODE_AUTH_TOKEN. This authenticates with the OIDC token minted by the
+      # id-token permission above, matched against the trusted publisher
+      # configured for this package on npmjs.com. Provenance is automatic.
+      #
+      # `stage publish` uploads the tarball but does NOT make it installable.
+      # A human then inspects it and runs `npm stage approve <stage-id>`, which
+      # is where 2FA is proved. CI therefore cannot ship a release on its own,
+      # so a compromised workflow cannot put a version in front of users.
+      # Promoting a staged release is documented in CONTRIBUTING.md.
+      - name: Stage the release
+        run: npm stage publish --access public

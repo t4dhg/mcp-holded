@@ -15,6 +15,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { checkRequestConfirmation } from "./lib/gate.js";
 
 const API_KEY = process.env.HOLDED_API_KEY;
 const BASE_URL = (process.env.HOLDED_BASE_URL || "https://api.holded.com/api/v2").replace(/\/$/, "");
@@ -146,7 +147,8 @@ server.registerTool(
     description:
       "Low-level access to any Holded API v2 endpoint with Bearer auth. `path` is relative to " +
       "https://api.holded.com/api/v2 and must start with '/'. Use this for endpoints that have no " +
-      "dedicated tool. Confirmed working list resources: contacts, invoices, purchases, products, services, payments.",
+      "dedicated tool. Confirmed working list resources: contacts, invoices, purchases, products, services, payments. " +
+      "DELETE and PUT require `confirm: true`; the first call returns the exact request and sends nothing.",
     inputSchema: {
       method: z.enum(["GET", "POST", "PUT", "DELETE"]).describe("HTTP method"),
       path: z.string().describe("Path under /api/v2, e.g. '/contacts' or '/invoices/{id}'"),
@@ -155,10 +157,13 @@ server.registerTool(
         .optional()
         .describe("Query-string parameters"),
       body: z.record(z.string(), z.any()).optional().describe("JSON body for POST/PUT"),
+      confirm: z.boolean().optional().describe("Required for DELETE and PUT, which cannot be undone"),
     },
   },
-  async ({ method, path, query, body }) => {
+  async ({ method, path, query, body, confirm }) => {
     try {
+      const gate = checkRequestConfirmation({ method, path, query, body, confirm }, BASE_URL);
+      if (!gate.proceed) return ok(gate.message);
       return ok(await holded(method, path, { query, body }));
     } catch (err) {
       return fail(err);

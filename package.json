@@ -1,6 +1,6 @@
 {
   "name": "@t4dhg/mcp-holded",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for the Holded API v2 (Bearer auth): contacts, invoices, purchases, products, services, payments, plus a generic request tool for any v2 endpoint.",
   "type": "module",
   "bin": {
@@ -8,6 +8,7 @@
   },
   "files": [
     "index.js",
+    "lib/",
     "README.md",
     "LICENSE"
   ],
@@ -15,6 +16,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "test": "node --test test/gate.test.mjs && node --check index.js",
     "smoke": "node smoke-test.mjs"
   },
   "keywords": [
