@@ -1,0 +1,80 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "status": "done",
+      "origin": {
+        "id": "4b20508e29c8dc2a403e7685",
+        "name": "Example Company 1 SL",
+        "type": "upload",
+        "source": "web"
+      },
+      "document_number": "FA642301",
+      "type": "purchase",
+      "outcome": {
+        "documentId": {},
+        "type": "purchase",
+        "exportedAt": {
+          "date": "2026-09-03 01:00:34.783000",
+          "timezone_type": 1,
+          "timezone": "+00:00"
+        },
+        "attached": false
+      },
+      "date": "2026-09-03T01:00:10+00:00",
+      "contact_name": "Example Company 2 SL",
+      "total": "20,30",
+      "file": {
+        "filename": "Example 3",
+        "path": "2e538e314840ba7db52bec15/scans"
+      },
+      "thumbnail": null,
+      "signature": null,
+      "scanned_at": "2026-09-03T01:00:10+00:00",
+      "seen_at": null,
+      "errors": [],
+      "draft": {
+        "description": "Sample description 5"
+      }
+    },
+    {
+      "id": "b410c924e6eca86e09ac4d26",
+      "status": "done",
+      "origin": {
+        "id": "4b20508e29c8dc2a403e7685",
+        "name": "Example Company 6 SL",
+        "type": "upload",
+        "source": "web"
+      },
+      "document_number": "3050-0821-8762",
+      "type": "purchase",
+      "outcome": {
+        "documentId": {},
+        "type": "purchase",
+        "exportedAt": {
+          "date": "2026-09-03 01:05:53.391000",
+          "timezone_type": 1,
+          "timezone": "+00:00"
+        },
+        "attached": false
+      },
+      "date": "2026-09-03T00:59:57+00:00",
+      "contact_name": "Example Company 7 SL",
+      "total": "252,77",
+      "file": {
+        "filename": "Example 8",
+        "path": "2e538e314840ba7db52bec15/scans"
+      },
+      "thumbnail": null,
+      "signature": null,
+      "scanned_at": "2026-09-03T00:59:57+00:00",
+      "seen_at": null,
+      "errors": [],
+      "draft": {
+        "description": "Sample description 10"
+      }
+    }
+  ],
+  "cursor": "b410c924e6eca86e09ac4d26",
+  "has_more": true
+}

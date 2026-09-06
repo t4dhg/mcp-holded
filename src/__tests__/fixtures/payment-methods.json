@@ -1,0 +1,36 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49:xxxxxx:xxxxxxxxxxxxxxxxxxxxx",
+      "name": "Example Company 1 SL",
+      "type": "stripe",
+      "status": "connected",
+      "isDefault": true,
+      "bankingAccountId": "4b20508e29c8dc2a403e7685",
+      "dueDays": null,
+      "connectionId": "xxxx_6xxxxxxxx4xxxxx5"
+    },
+    {
+      "id": "450231e5f02e538e314840ba",
+      "name": "Example Company 2 SL",
+      "type": "manual",
+      "status": "connected",
+      "isDefault": false,
+      "bankingAccountId": null,
+      "dueDays": 0,
+      "connectionId": null
+    },
+    {
+      "id": "7db52bec15b410c924e6eca8",
+      "name": "Example Company 3 SL",
+      "type": "manual",
+      "status": "connected",
+      "isDefault": false,
+      "bankingAccountId": null,
+      "dueDays": null,
+      "connectionId": null
+    }
+  ],
+  "cursor": "7db52bec15b410c924e6eca8",
+  "has_more": false
+}

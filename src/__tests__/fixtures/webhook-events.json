@@ -1,0 +1,42 @@
+{
+  "data": {
+    "invoice": ["invoice.create", "invoice.update", "invoice.delete", "invoice.approve"],
+    "salesorder": ["salesorder.create", "salesorder.update", "salesorder.delete"],
+    "estimate": ["estimate.create", "estimate.update", "estimate.delete"],
+    "creditnote": [
+      "creditnote.create",
+      "creditnote.update",
+      "creditnote.delete",
+      "creditnote.approve"
+    ],
+    "proform": ["proform.create", "proform.update", "proform.delete"],
+    "waybill": ["waybill.create", "waybill.update", "waybill.delete"],
+    "purchase": ["purchase.create", "purchase.update", "purchase.delete", "purchase.approve"],
+    "purchaseorder": ["purchaseorder.create", "purchaseorder.update", "purchaseorder.delete"],
+    "salesreceipt": [
+      "salesreceipt.create",
+      "salesreceipt.update",
+      "salesreceipt.delete",
+      "salesreceipt.approve"
+    ],
+    "receiptnote": [
+      "receiptnote.create",
+      "receiptnote.update",
+      "receiptnote.delete",
+      "receiptnote.approve"
+    ],
+    "receipt": ["receipt.create", "receipt.update", "receipt.delete"],
+    "purchaserefund": [
+      "purchaserefund.create",
+      "purchaserefund.update",
+      "purchaserefund.delete",
+      "purchaserefund.approve"
+    ],
+    "stock": ["stock.update"],
+    "contact": ["contact.create", "contact.update", "contact.delete"],
+    "product": ["product.create", "product.update", "product.delete"],
+    "service": ["service.create", "service.update", "service.delete"],
+    "payment": ["payment.create", "payment.update", "payment.delete"],
+    "warehouse": ["warehouse.create", "warehouse.update", "warehouse.delete"]
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "type": "https:\/\/api.holded.com\/problems\/not-found",
+  "title": "Not found",
+  "status": 404,
+  "detail": "Employee not found."
+}

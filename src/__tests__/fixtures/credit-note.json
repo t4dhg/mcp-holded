@@ -1,0 +1,72 @@
+{
+  "id": "0933c59cd3ae1a292f1c1f49",
+  "document_number": "CN370030",
+  "contact_id": "8e29c8dc2a403e7685979450",
+  "contact_name": "Example Company 1 SL",
+  "description": "Sample description 2",
+  "date": "2026-08-20",
+  "due_date": "2026-09-19",
+  "subtotal": "21083,90",
+  "discount": "2,30",
+  "total": "59002,52",
+  "tax": "7473,10",
+  "currency": "EUR",
+  "status": "completed",
+  "tags": [],
+  "custom_fields": [
+    {
+      "field": "custom field",
+      "value": "1648731797"
+    }
+  ],
+  "draft": false,
+  "lines": [
+    {
+      "line_id": "15b410c924e6eca86e09ac4d",
+      "name": "Example Company 3 SL",
+      "type": "product",
+      "description": "",
+      "price": "2,00",
+      "units": "15408,21",
+      "discount": "8,60",
+      "tax": "0",
+      "taxes": ["s_iva_21"],
+      "tags": [],
+      "product_id": null,
+      "variant_id": null,
+      "service_id": null,
+      "sku": null,
+      "weight": "2,27",
+      "cost_price": "9,02",
+      "account": "cb7018a6780119513ee8628e",
+      "project_id": null,
+      "retention": "5,50",
+      "unit_type": null
+    }
+  ],
+  "sii_status": null,
+  "verifactu_status": null,
+  "currency_change": "3.00",
+  "notes": "Sample notes 4",
+  "language": "es",
+  "accounting_date": "2026-08-20",
+  "approved_at": "2026-08-20T14:08:03",
+  "projects_summary": [],
+  "pipeline_id": null,
+  "warehouse_id": null,
+  "shipping": null,
+  "shipping_data": null,
+  "from": {
+    "id": "6a90e45eadbab4ad413fd628",
+    "doc_type": "invoice"
+  },
+  "body": "7",
+  "design_id": "3520d67add29bd05e456a49d",
+  "payment_method_id": "25333f34acc4b4dc64b60f5a",
+  "payments_total": "46007,21",
+  "payments_pending": "8,90",
+  "payments_refunds": "93347,39",
+  "payments_detail": [],
+  "multiple_due_dates": null,
+  "forecast_date": null
+}

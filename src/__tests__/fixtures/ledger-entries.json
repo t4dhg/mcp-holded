@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "entry_number": 2771,
+      "line": 1,
+      "date": "01/09/2026",
+      "type": "collect",
+      "description": "Sample description 1",
+      "doc_description": "",
+      "account": 43000007,
+      "debit": "1.20",
+      "credit": "7378.29",
+      "tags": [],
+      "checked": false
+    },
+    {
+      "entry_number": 2771,
+      "line": 2,
+      "date": "01/09/2026",
+      "type": "collect",
+      "description": "Sample description 2",
+      "doc_description": "",
+      "account": 57200001,
+      "debit": "1605.10",
+      "credit": "7.02",
+      "tags": [],
+      "checked": false
+    },
+    {
+      "entry_number": 2921,
+      "line": 1,
+      "date": "03/09/2026",
+      "type": "payment",
+      "description": "Sample description 3",
+      "doc_description": "",
+      "account": 41000198,
+      "debit": "6.31",
+      "credit": "1.00",
+      "tags": [],
+      "checked": false
+    }
+  ],
+  "has_more": true
+}

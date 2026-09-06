@@ -24,18 +24,23 @@ What to expect:
 
 ## Scope
 
-This project is an MCP server that talks to the Holded API v2 on behalf of whoever runs it. The following are in scope:
+This project is an MCP server that talks to the Holded API v2 on behalf of whoever runs it. Holded is a live accounting system, so the following are in scope:
 
-- `holded_request` sending a DELETE or PUT without the `confirm: true` its schema requires
+- Any tool action listed under "Operations that require confirmation" in the README executing without `confirm: true`, or a destructive API call reachable from a tool action that is not on that list. A structural test (`confirmation-coverage.test.ts`) is meant to make this impossible; a way around it is a vulnerability.
+- `holded_request` sending a `DELETE`, `PUT`, `PATCH`, or a `POST` to a bulk, cancel, archive, approve, send, reconcile, ship, skip or clock path without `confirm: true`
 - Leaking the API key into logs, error messages, or tool responses
-- Any way for a tool argument to reach a host other than the configured Holded base URL
+- Any way for a tool argument to reach a host other than the configured Holded base URL, or to read or write a local file other than the one named in `file_path` or `output_path`
 
 Out of scope:
 
 - Vulnerabilities in the Holded API itself. Report those to Holded.
-- The server acting on instructions from whoever controls the MCP client. The client is trusted by design; run this server only with a client and a Holded API key you control.
+- The server acting on instructions from whoever controls the MCP client. The client is trusted by design; run this server only with a client and a Holded API key you control. The confirmation gate reduces accidents; it is not an authorization boundary.
+
+## Supply chain
+
+Releases are staged by CI through npm trusted publishing (OIDC, no long-lived token anywhere) and only become installable after a maintainer approves the exact staged artifact with 2FA. Provenance attestations are attached automatically. Verify a release with `npm view @t4dhg/mcp-holded dist.shasum` against the workflow log.
 
 ## Operational notes
 
-- The API key grants whatever the Holded API grants it. Scope it to the least you need, keep it in `.env` or your MCP client's `env` block, and never commit it.
-- `holded_request` can reach every write endpoint Holded exposes. Deletes and overwrites are real and irreversible; the confirmation step reduces accidents, it is not an authorization boundary.
+- The API key grants whatever the Holded API grants it. Keep it in your MCP client's `env` block and never commit it. `.mcp.json` and `.env*` are git-ignored here.
+- The server stores nothing and logs only to stderr, and only when `DEBUG=true`. The key is never logged.

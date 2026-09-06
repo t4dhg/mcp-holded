@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "name": "Example Company 1 SL",
+      "amount": "3",
+      "scope": "purchases",
+      "key": "s_iva0",
+      "group": "iva",
+      "type": "percentage",
+      "items": [],
+      "status": true,
+      "visible": true,
+      "scheme": false
+    },
+    {
+      "id": "b20508e29c8dc2a403e76859",
+      "name": "Example Company 2 SL",
+      "amount": "5",
+      "scope": "purchases",
+      "key": "s_nos",
+      "group": "iva",
+      "type": "percentage",
+      "items": [],
+      "status": true,
+      "visible": true,
+      "scheme": false
+    },
+    {
+      "id": "9450231e5f02e538e314840b",
+      "name": "Example Company 3 SL",
+      "amount": "6487",
+      "scope": "sales",
+      "key": "tax_2327_sales",
+      "group": "iva",
+      "type": "percentage",
+      "items": [],
+      "status": true,
+      "visible": true,
+      "scheme": false
+    }
+  ]
+}

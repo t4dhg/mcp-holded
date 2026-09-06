@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "name": "Example Company 1 SL",
+      "format": "F[YY]%%%%",
+      "last": 1353,
+      "type": "invoice",
+      "refund_numbering_series_id": "4b20508e29c8dc2a403e7685",
+      "verifactu_excluded": false
+    }
+  ]
+}

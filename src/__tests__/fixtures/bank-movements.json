@@ -1,0 +1,57 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "banking_account_id": "4b20508e29c8dc2a403e7685",
+      "description": "Sample description 1",
+      "note": "",
+      "amount": "-6452.30",
+      "currency": "EUR",
+      "balance": "21083.90",
+      "accounting_amount": null,
+      "accounting_currency": null,
+      "booking_date": "2026-09-04T00:00:00+00:00",
+      "value_date": "2026-09-04T00:00:00+00:00",
+      "status": "pending",
+      "reconciled_amount": "2.30",
+      "origin": "afterbanks",
+      "flagged_at": null
+    },
+    {
+      "id": "8e314840ba7db52bec15b410",
+      "banking_account_id": "4b20508e29c8dc2a403e7685",
+      "description": "Sample description 2",
+      "note": "",
+      "amount": "-85.12",
+      "currency": "EUR",
+      "balance": "90876.54",
+      "accounting_amount": null,
+      "accounting_currency": null,
+      "booking_date": "2026-09-04T00:00:00+00:00",
+      "value_date": "2026-09-04T00:00:00+00:00",
+      "status": "pending",
+      "reconciled_amount": "8.06",
+      "origin": "afterbanks",
+      "flagged_at": null
+    },
+    {
+      "id": "c4d2640870c33eba4384ccf4",
+      "banking_account_id": "4b20508e29c8dc2a403e7685",
+      "description": "Sample description 3",
+      "note": "",
+      "amount": "-8277.00",
+      "currency": "EUR",
+      "balance": "16345.00",
+      "accounting_amount": null,
+      "accounting_currency": null,
+      "booking_date": "2026-09-04T00:00:00+00:00",
+      "value_date": "2026-09-04T00:00:00+00:00",
+      "status": "pending",
+      "reconciled_amount": "1.30",
+      "origin": "afterbanks",
+      "flagged_at": null
+    }
+  ],
+  "cursor": "c4d2640870c33eba4384ccf4",
+  "has_more": true
+}

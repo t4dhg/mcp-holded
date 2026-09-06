@@ -1,0 +1,19 @@
+{
+  "id": "0933c59cd3ae1a292f1c1f49",
+  "name": "Example Company 1 SL",
+  "type": "bank",
+  "currency": "EUR",
+  "balance": "37103.05",
+  "iban": "ES0090781200403420000030",
+  "bic": "EXAMESMM",
+  "account_number": "ES0023090002060700900200",
+  "creditor_id": null,
+  "issuer_id": null,
+  "archived": false,
+  "synced_at": "2026-09-05T20:35:30+00:00",
+  "accounting_account_id": "c924e6eca86e09ac4d264087",
+  "accounting_account_number": 57200001,
+  "institution_id": "example_bank",
+  "institution_name": "Example 2",
+  "transactions_pending_to_reconcile": 50
+}

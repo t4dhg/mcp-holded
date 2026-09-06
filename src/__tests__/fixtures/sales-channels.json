@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "name": "Example Company 1 SL",
+      "description": "",
+      "color": "#4b3b62",
+      "account_num": 70501002,
+      "archived": false
+    },
+    {
+      "id": "4b20508e29c8dc2a403e7685",
+      "name": "Example Company 2 SL",
+      "description": "",
+      "color": "#8b5653",
+      "account_num": 70500002,
+      "archived": false
+    },
+    {
+      "id": "979450231e5f02e538e31484",
+      "name": "Example Company 3 SL",
+      "description": "",
+      "color": "#e4cf55",
+      "account_num": 70501003,
+      "archived": false
+    }
+  ]
+}

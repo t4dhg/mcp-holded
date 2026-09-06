@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "name": "Example Company 1 SL",
+      "code": "",
+      "description": "",
+      "price": "31",
+      "cost": "1",
+      "tags": [],
+      "taxes": [],
+      "sales_channel_id": null,
+      "color": "#20ec86",
+      "duration": "4",
+      "archived": false
+    }
+  ],
+  "cursor": "0933c59cd3ae1a292f1c1f49",
+  "has_more": false
+}

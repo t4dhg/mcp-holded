@@ -1,0 +1,62 @@
+{
+  "id": "0933c59cd3ae1a292f1c1f49",
+  "document_number": "PRO370030",
+  "contact_id": "8e29c8dc2a403e7685979450",
+  "contact_name": "Example Company 1 SL",
+  "description": "Sample description 2",
+  "date": "2030-07-21",
+  "due_date": "2030-07-22",
+  "subtotal": "21080,00",
+  "discount": "9,00",
+  "total": "59200,20",
+  "tax": "0,00",
+  "currency": "EUR",
+  "status": "pending",
+  "tags": [],
+  "custom_fields": [
+    {
+      "field": "custom field",
+      "value": "74873179703"
+    }
+  ],
+  "draft": false,
+  "lines": [
+    {
+      "line_id": null,
+      "name": "Example Company 3 SL",
+      "type": "product",
+      "description": "",
+      "price": "7,21",
+      "units": "17500,37",
+      "discount": "7,40",
+      "tax": "0",
+      "taxes": [],
+      "tags": [],
+      "product_id": null,
+      "variant_id": null,
+      "service_id": null,
+      "sku": null,
+      "weight": "6,70",
+      "cost_price": "8,00",
+      "account": "40870c33eba4384ccf4d3cb7",
+      "project_id": null,
+      "retention": "1,06",
+      "unit_type": null
+    }
+  ],
+  "sii_status": null,
+  "verifactu_status": null,
+  "currency_change": "4.00",
+  "notes": "",
+  "language": "es",
+  "accounting_date": null,
+  "approved_at": "2025-07-28T12:29:26",
+  "projects_summary": [],
+  "pipeline_id": null,
+  "warehouse_id": null,
+  "shipping": null,
+  "shipping_data": null,
+  "from": null,
+  "body": null,
+  "design_id": null
+}

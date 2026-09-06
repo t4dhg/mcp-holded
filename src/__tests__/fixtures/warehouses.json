@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "user_id": "4b20508e29c8dc2a403e7685",
+      "name": "Example Company 1 SL",
+      "notes": "",
+      "email": null,
+      "phone": "",
+      "mobile": "",
+      "default": true,
+      "color": "#3c1e14",
+      "icon": "fa-warehouse",
+      "address": {
+        "address": "",
+        "city": "",
+        "province": "",
+        "postal_code": "",
+        "country": "",
+        "country_code": "ES"
+      }
+    }
+  ]
+}

@@ -1,27 +1,55 @@
 {
   "name": "@t4dhg/mcp-holded",
-  "version": "1.0.1",
-  "description": "MCP server for the Holded API v2 (Bearer auth): contacts, invoices, purchases, products, services, payments, plus a generic request tool for any v2 endpoint.",
+  "version": "2.0.0",
+  "mcpName": "io.github.t4dhg/mcp-holded",
+  "description": "MCP server for the Holded API v2: contacts, sales and purchase documents, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks, with confirmation gates on every destructive operation.",
   "type": "module",
+  "main": "dist/index.js",
   "bin": {
-    "mcp-holded": "./index.js"
+    "mcp-holded": "dist/index.js"
   },
   "files": [
-    "index.js",
-    "lib/",
+    "dist/",
     "README.md",
-    "LICENSE"
+    "llms.txt"
   ],
-  "engines": {
-    "node": ">=18"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
-    "test": "node --test test/gate.test.mjs && node --check index.js",
-    "smoke": "node smoke-test.mjs"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist coverage .vitest test-results",
+    "rebuild": "npm run clean && npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.json\" \"*.json\" \"*.md\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.json\" \"*.json\" \"*.md\"",
+    "typecheck": "tsc --noEmit",
+    "smoke": "node scripts/smoke-test.mjs",
+    "prepublishOnly": "npm run test && npm run build",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
+    "mcp-server",
     "holded",
     "holded-api",
     "invoicing",
@@ -44,8 +72,23 @@
   "publishConfig": {
     "access": "public"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.17.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.18.2",
+    "vitest": "^2.1.8"
   }
 }

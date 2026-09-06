@@ -1,0 +1,57 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "type": "payment",
+      "bank_account_id": "4b20508e29c8dc2a403e7685",
+      "contact_id": "979450231e5f02e538e31484",
+      "contact_name": "Example Company 1 SL",
+      "amount": "1.7",
+      "description": "Sample description 2",
+      "date": "2026-09-02T22:00:00+00:00",
+      "status": "paid",
+      "reconciliation_status": "pending",
+      "total_documents": "-6.4",
+      "total_transactions": "8",
+      "total_advance": "7",
+      "document_type": "purchase",
+      "document_id": "52bec15b410c924e6eca86e0"
+    },
+    {
+      "id": "9ac4d2640870c33eba4384cc",
+      "type": "collection",
+      "bank_account_id": "f4d3cb7018a6780119513ee8",
+      "contact_id": "628e7c824166a90e45eadbab",
+      "contact_name": "Example Company 3 SL",
+      "amount": "3630.2",
+      "description": "Sample description 4",
+      "date": "2026-09-01T00:00:00+00:00",
+      "status": "paid",
+      "reconciliation_status": "reconciled",
+      "total_documents": "9801.5",
+      "total_transactions": "7201.0",
+      "total_advance": "8",
+      "document_type": "invoice",
+      "document_id": "67add29bd05e456a49d25333"
+    },
+    {
+      "id": "f34acc4b4dc64b60f5a5911b",
+      "type": "payment",
+      "bank_account_id": "41ccf1e6e57b5f0b17b1f1b7",
+      "contact_id": null,
+      "contact_name": null,
+      "amount": "3950",
+      "description": "Sample description 5",
+      "date": "2026-08-30T22:00:00+00:00",
+      "status": "paid",
+      "reconciliation_status": "pending",
+      "total_documents": "-3270",
+      "total_transactions": "9",
+      "total_advance": "6",
+      "document_type": "entry",
+      "document_id": "074a810bc9bd929e275d5825"
+    }
+  ],
+  "cursor": "f34acc4b4dc64b60f5a5911b",
+  "has_more": true
+}

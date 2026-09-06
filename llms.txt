@@ -1,0 +1,35 @@
+# @t4dhg/mcp-holded
+
+> MCP server for the Holded API v2 (Spanish ERP: invoicing, accounting, treasury, CRM, projects, team). Fourteen hierarchical tools with an `action` parameter, validated inputs and outputs, confirmation gates on destructive operations.
+
+## Configuration
+
+Set `HOLDED_API_KEY` to a v2 Personal Access Token (`pat_<id>_<secret>`). Optional: `HOLDED_BASE_URL`, `HOLDED_TIMEOUT_MS`, `HOLDED_MAX_RETRIES`, `DEBUG`.
+
+## Tools
+
+- holded_discover: list domains.
+- holded_contacts: list (exact email/code/phone/mobile/custom_id), search (name substring), get, create, update*, delete*, bulk_archive*, bulk_delete*, list_attachments, attach, portal_link, list_groups, get_group, create_group, update_group*, delete_group*.
+- holded_sales (type: invoice | credit_note | estimate | proforma | sales_receipt | sales_order | waybill | receipt_note | recurring_invoice): list (contact_id, status, start_date, end_date, due_date_start, due_date_end, sort, approval_status), get, find_by_number, pdf (output_path), list_attachments, attach, schedule, create, update*, delete*, approve*, cancel*, send*, set_pipeline*, record_payment, convert, accept, reject, skip*, bulk_approve*, bulk_cancel*, bulk_delete*.
+- holded_purchases (type: purchase | purchase_refund | purchase_order | purchase_shipment): list, get, pdf, list_attachments, attach, received_items, create, update*, delete*, approve*, send*, set_pipeline*, record_payment, receive.
+- holded_payments: list (start_date, end_date, banking_account_id, document_id), get, create, update*, delete*, list_methods, get_method.
+- holded_treasury: list_accounts (type, archived), get_account, create_account, update_account*, archive_account*, delete_account*, list_movements, list_cash_movements, create_movements, reconcile*, list_remittances, get_remittance, list_forecasts, get_forecast, create_forecast, update_forecast*, delete_forecast*.
+- holded_accounting: list_accounts (start_date, end_date, include_empty), create_account, list_ledger (start_date*, end_date*, account), create_ledger_entry, list_taxes, tax_keys, list_expenses_accounts, get_expenses_account, create_expenses_account, update_expenses_account*, delete_expenses_account*, list_sales_channels, get_sales_channel, create_sales_channel, update_sales_channel*, delete_sales_channel*, list_numbering_series (series_type), create_numbering_series, update_numbering_series*, delete_numbering_series*, list_tags, create_tag, delete_tag*.
+- holded_catalog: products, services, warehouses, price lists, production orders (list/get/create/update*/delete*, product_stock, update_stock*, warehouse_stock).
+- holded_team: list_employees (search), get_employee, employee_contract, create_employee, list_times, list_salary_records, get_salary_record, salary_record_pdf, list_payslips, get_payslip, payslip_pdf, create_payslip_payment, delete_payslip_payment*.
+- holded_crm: funnels and leads (list/get/create/update*/delete*), move_stage*, update_dates*, add_note, update_note*, add_task, update_task*, delete_task*.
+- holded_projects: projects, tasks, times (list/get/create/update*/delete*), project_summary.
+- holded_calendar: events (list/get/create/update*/delete*), bookings (list/get/create/update*/cancel*), list_locations, slots.
+- holded_inbox: list, get, upload (file_path), download, update*, attach*, delete*.
+- holded_webhooks: list, get, events, create, update*, enable, disable*, delete*, usage.
+- holded_request: any v2 endpoint (method, path, query, body). DELETE, PUT, PATCH and POST to bulk/cancel/archive/approve/send/reconcile/ship/skip/clock paths need confirm: true.
+
+Actions marked * require `confirm: true`; the first call without it sends nothing and explains.
+
+## Facts about the API
+
+- Cursor pagination: `{ items, cursor, has_more }`; limit max 200; `page` is ignored.
+- Amounts are strings. Documents and salary records use a comma decimal ("63500,00"); payments, treasury, accounting use a dot ("8.3"). Never converted.
+- Ledger dates are DD/MM/YYYY. Everything else ISO 8601.
+- Bad key gives 403, not 401. Unknown route gives 404 `{ message }`. Rate limit 100 requests per minute.
+- Creates return `{ id }`; the tools re-read the record.

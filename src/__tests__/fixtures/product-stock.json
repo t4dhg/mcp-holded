@@ -1,0 +1,14 @@
+{
+  "product_id": "0933c59cd3ae1a292f1c1f49",
+  "has_stock": true,
+  "total": "3.7",
+  "available": "2.0",
+  "reserved": "4",
+  "in_transit": "1",
+  "warehouses": [
+    {
+      "warehouse_id": "8e29c8dc2a403e7685979450",
+      "stock": "2.1"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": "0933c59cd3ae1a292f1c1f49",
+  "document_number": "A370030",
+  "contact_id": "8e29c8dc2a403e7685979450",
+  "contact_name": "Example Company 1 SL",
+  "description": "Sample description 2",
+  "date": "2023-01-03",
+  "due_date": "2023-01-03",
+  "subtotal": "2,00",
+  "discount": "8,00",
+  "total": "2,30",
+  "tax": "0,00",
+  "currency": "EUR",
+  "status": "pending",
+  "tags": [],
+  "custom_fields": [
+    {
+      "field": "custom field",
+      "value": "custom value"
+    },
+    {
+      "field": "custom field",
+      "value": "custom value"
+    },
+    {
+      "field": "custom field",
+      "value": "custom value"
+    },
+    {
+      "field": "custom field",
+      "value": "custom value"
+    },
+    {
+      "field": "custom field",
+      "value": "custom value"
+    }
+  ],
+  "draft": false,
+  "lines": [
+    {
+      "line_id": null,
+      "name": "Example Company 3 SL",
+      "type": "product",
+      "description": "",
+      "price": "5,20",
+      "units": "352060,70",
+      "discount": "2,90",
+      "tax": "0",
+      "taxes": ["s_iva_21"],
+      "tags": [],
+      "product_id": null,
+      "variant_id": null,
+      "service_id": null,
+      "sku": null,
+      "weight": "4,20",
+      "cost_price": "1,50",
+      "account": "4e6eca86e09ac4d2640870c3",
+      "project_id": null,
+      "retention": "2,72",
+      "unit_type": null
+    },
+    {
+      "line_id": null,
+      "name": "Example Company 4 SL",
+      "type": "product",
+      "description": "",
+      "price": "2,27",
+      "units": "9027,00",
+      "discount": "1,60",
+      "tax": "0",
+      "taxes": ["s_iva_21"],
+      "tags": [],
+      "product_id": null,
+      "variant_id": null,
+      "service_id": null,
+      "sku": null,
+      "weight": "5,00",
+      "cost_price": "1,30",
+      "account": "4e6eca86e09ac4d2640870c3",
+      "project_id": null,
+      "retention": "2,93",
+      "unit_type": null
+    }
+  ],
+  "sii_status": null,
+  "verifactu_status": null,
+  "currency_change": "2.80",
+  "notes": "",
+  "language": "es",
+  "accounting_date": null,
+  "approved_at": "2023-01-03T02:12:38",
+  "projects_summary": [],
+  "pipeline_id": null,
+  "warehouse_id": null,
+  "shipping": null,
+  "shipping_data": null,
+  "from": null,
+  "body": "7",
+  "design_id": "824166a90e45eadbab4ad413",
+  "tracking_key": null,
+  "tracking_name": null,
+  "tracking_number": null,
+  "pickup_date": null,
+  "delivery_date": null,
+  "internal_notes": null
+}

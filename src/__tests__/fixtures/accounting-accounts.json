@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "color": "#dbe1d3",
+      "number": 11300000,
+      "name": "Example Company 1 SL",
+      "description": "",
+      "group": "Financiación básica",
+      "debit": "3710.30",
+      "credit": "5.17",
+      "balance": "5881.60",
+      "archived": false,
+      "non_deductible": false
+    },
+    {
+      "id": "03e7685979450231e5f02e53",
+      "color": "#b3541b",
+      "number": 12100003,
+      "name": "Example Company 2 SL",
+      "description": "",
+      "group": "Financiación básica",
+      "debit": "592025.20",
+      "credit": "7.47",
+      "balance": "417970.37",
+      "archived": false,
+      "non_deductible": false
+    },
+    {
+      "id": "410c924e6eca86e09ac4d264",
+      "color": "#7DA472",
+      "number": 12900000,
+      "name": "Example Company 3 SL",
+      "description": "",
+      "group": "Financiación básica",
+      "debit": "1.40",
+      "credit": "821876.22",
+      "balance": "-627792.82",
+      "archived": false,
+      "non_deductible": false
+    }
+  ]
+}

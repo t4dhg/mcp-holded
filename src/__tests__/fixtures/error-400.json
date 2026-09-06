@@ -1,0 +1,6 @@
+{
+  "type": "https:\/\/api.holded.com\/problems\/bad-request",
+  "title": "Bad request",
+  "status": 400,
+  "detail": "Error parsing ObjectId string: bogus"
+}

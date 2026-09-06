@@ -1,0 +1,104 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "document_number": "R_AYRVHCWO-3103",
+      "contact_id": "08e29c8dc2a403e768597945",
+      "contact_name": "Example Company 1 SL",
+      "description": "Sample description 2",
+      "date": "2026-06-30",
+      "due_date": "2026-07-17",
+      "subtotal": "11,00",
+      "discount": "8,00",
+      "total": "28,00",
+      "tax": "0,00",
+      "currency": "EUR",
+      "status": "completed",
+      "tags": [],
+      "custom_fields": [
+        {
+          "field": "custom field",
+          "value": "custom value"
+        }
+      ],
+      "draft": false,
+      "lines": [
+        {
+          "line_id": "8e314840ba7db52bec15b410",
+          "name": "Example Company 3 SL",
+          "type": "product",
+          "description": "Sample description 4",
+          "price": "85,00",
+          "units": "9,07",
+          "discount": "7,40",
+          "tax": "0",
+          "taxes": ["p_iva_invsuj"],
+          "tags": [],
+          "product_id": null,
+          "variant_id": null,
+          "service_id": null,
+          "sku": null,
+          "weight": "6,70",
+          "cost_price": "8,00",
+          "account": "40870c33eba4384ccf4d3cb7",
+          "project_id": null,
+          "retention": "1,06",
+          "unit_type": null
+        }
+      ],
+      "sii_status": null,
+      "verifactu_status": null
+    },
+    {
+      "id": "6780119513ee8628e7c82416",
+      "document_number": "R_ZXFQRC4A-6082",
+      "contact_id": "08e29c8dc2a403e768597945",
+      "contact_name": "Example Company 5 SL",
+      "description": "Sample description 6",
+      "date": "2026-06-30",
+      "due_date": "2026-07-17",
+      "subtotal": "486,77",
+      "discount": "3,80",
+      "total": "129,40",
+      "tax": "0,00",
+      "currency": "EUR",
+      "status": "completed",
+      "tags": [],
+      "custom_fields": [
+        {
+          "field": "custom field",
+          "value": "custom value"
+        }
+      ],
+      "draft": false,
+      "lines": [
+        {
+          "line_id": "8a3520d67add29bd05e456a4",
+          "name": "Example Company 7 SL",
+          "type": "product",
+          "description": "Sample description 8",
+          "price": "681,00",
+          "units": "3,02",
+          "discount": "3,72",
+          "tax": "0",
+          "taxes": ["p_iva_invsuj"],
+          "tags": [],
+          "product_id": null,
+          "variant_id": null,
+          "service_id": null,
+          "sku": null,
+          "weight": "7,08",
+          "cost_price": "4,03",
+          "account": "40870c33eba4384ccf4d3cb7",
+          "project_id": null,
+          "retention": "1,33",
+          "unit_type": null
+        }
+      ],
+      "sii_status": null,
+      "verifactu_status": null
+    }
+  ],
+  "cursor": "6780119513ee8628e7c82416",
+  "has_more": true
+}

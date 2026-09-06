@@ -1,0 +1,55 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "name": "Example Company 1 SL",
+      "stages": [
+        {
+          "id": "4b20508e29c8dc2a403e7685",
+          "name": "Example Company 2 SL",
+          "key": "",
+          "description": "",
+          "deal_probability": 100,
+          "rotting_days": 0
+        },
+        {
+          "id": "979450231e5f02e538e31484",
+          "name": "Example Company 3 SL",
+          "key": "",
+          "description": "",
+          "deal_probability": 100,
+          "rotting_days": 0
+        },
+        {
+          "id": "0ba7db52bec15b410c924e6e",
+          "name": "Example Company 4 SL",
+          "key": "",
+          "description": "",
+          "deal_probability": 100,
+          "rotting_days": 0
+        },
+        {
+          "id": "ca86e09ac4d2640870c33eba",
+          "name": "Example Company 5 SL",
+          "key": "",
+          "description": "",
+          "deal_probability": 100,
+          "rotting_days": 0
+        },
+        {
+          "id": "4384ccf4d3cb7018a6780119",
+          "name": "Example Company 6 SL",
+          "key": "",
+          "description": "",
+          "deal_probability": 100,
+          "rotting_days": 0
+        }
+      ],
+      "labels": [],
+      "created_at": null,
+      "updated_at": null
+    }
+  ],
+  "cursor": "0933c59cd3ae1a292f1c1f49",
+  "has_more": false
+}

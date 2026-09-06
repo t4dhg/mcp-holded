@@ -1,0 +1,34 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "employee_id": "4b20508e29c8dc2a403e7685",
+      "employee_name": "Example 1",
+      "date": "2026-08-31",
+      "description": "Sample description 2",
+      "tags": [],
+      "accounting_account_id": "979450231e5f02e538e31484",
+      "is_draft": false,
+      "total_payable": "1764,87",
+      "payment_total": "4179,70",
+      "payment_pending": "4,20",
+      "payment_status": "PAID"
+    },
+    {
+      "id": "0c924e6eca86e09ac4d26408",
+      "employee_id": "70c33eba4384ccf4d3cb7018",
+      "employee_name": "Example 3",
+      "date": "2026-08-31",
+      "description": "Sample description 4",
+      "tags": [],
+      "accounting_account_id": "a6780119513ee8628e7c8241",
+      "is_draft": false,
+      "total_payable": "4366,08",
+      "payment_total": "3386,87",
+      "payment_pending": "6,28",
+      "payment_status": "PAID"
+    }
+  ],
+  "cursor": "0c924e6eca86e09ac4d26408",
+  "has_more": true
+}

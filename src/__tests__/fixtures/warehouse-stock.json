@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "product_id": "0933c59cd3ae1a292f1c1f49",
+      "variant_id": "4b20508e29c8dc2a403e7685",
+      "stock": "6.4"
+    },
+    {
+      "product_id": "9450231e5f02e538e314840b",
+      "variant_id": "a7db52bec15b410c924e6eca",
+      "stock": "-50806"
+    }
+  ],
+  "has_more": false
+}

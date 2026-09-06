@@ -1,0 +1,6 @@
+{
+  "type": "https:\/\/api.holded.com\/problems\/forbidden",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "Access denied."
+}

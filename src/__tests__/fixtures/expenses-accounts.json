@@ -1,0 +1,31 @@
+{
+  "items": [
+    {
+      "id": "0933c59cd3ae1a292f1c1f49",
+      "name": "Example Company 1 SL",
+      "description": "",
+      "color": "#98c93d",
+      "account_num": 68000001,
+      "archived": false,
+      "non_deductible": false
+    },
+    {
+      "id": "4b20508e29c8dc2a403e7685",
+      "name": "Example Company 2 SL",
+      "description": "",
+      "color": "#873e3e",
+      "account_num": 68100001,
+      "archived": false,
+      "non_deductible": false
+    },
+    {
+      "id": "979450231e5f02e538e31484",
+      "name": "Example Company 3 SL",
+      "description": "",
+      "color": "#784a3a",
+      "account_num": 64100000,
+      "archived": false,
+      "non_deductible": false
+    }
+  ]
+}
