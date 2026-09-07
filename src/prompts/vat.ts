@@ -57,7 +57,8 @@ export function summariseByTaxKey(
   for (const doc of docs) {
     for (const line of doc.lines ?? []) {
       const price = parseAmount((line as { price?: string | null }).price ?? null);
-      const units = parseAmount((line as { units?: string | null }).units ?? null) || 1;
+      const rawUnits = (line as { units?: string | null }).units;
+      const units = rawUnits == null ? 1 : parseAmount(rawUnits);
       const discount = parseAmount((line as { discount?: string | null }).discount ?? null);
       const base = price * units * (1 - discount / 100);
       const keys = ((line as { taxes?: unknown[] }).taxes ?? []).filter(

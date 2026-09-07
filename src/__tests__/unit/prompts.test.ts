@@ -344,6 +344,58 @@ describe('holded_vat_summary', () => {
     expect(rows[0]?.rateKnown).toBe(false);
   });
 
+  it('does not count an explicit zero-units line as one unit', () => {
+    const doc = [
+      {
+        id: '5',
+        date: '2026-04-01',
+        subtotal: '100,00',
+        discount: '0,00',
+        total: '121,00',
+        tax: '21,00',
+        currency: 'EUR',
+        status: 'paid',
+        lines: [
+          { name: 'Sold', price: '100,00', units: '1', taxes: ['s_iva0'] },
+          { name: 'Complimentary', price: '100,00', units: '0', taxes: ['s_iva0'] },
+        ],
+      },
+    ];
+    const rows = summariseByTaxKey(doc as never, RATES);
+    const row = rows.find(r => r.key === 's_iva0');
+    expect(row?.base).toBeCloseTo(100, 2);
+    expect(row?.quota).toBeCloseTo(21, 2);
+    expect(row?.count).toBe(2);
+  });
+
+  it('reads taxes, then sales, then purchases, in that order', async () => {
+    const fetchMock = stubFetch(
+      {
+        body: {
+          items: [
+            {
+              id: 't1',
+              name: 'IVA 21%',
+              key: 's_iva0',
+              amount: '21',
+              type: 'percentage',
+              scope: 'sales',
+            },
+          ],
+        },
+      },
+      { body: { items: invoices, cursor: null, has_more: false } },
+      { body: { items: [], cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    await client.getPrompt({ name: 'holded_vat_summary', arguments: {} });
+    const urls = fetchMock.mock.calls.map(call => String(call[0]));
+    expect(urls).toHaveLength(3);
+    expect(urls[0]).toContain('/taxes');
+    expect(urls[1]).toContain('/invoices');
+    expect(urls[2]).toContain('/purchases');
+  });
+
   it('defaults to the previous calendar quarter and disclaims advice', async () => {
     stubFetch(
       {
