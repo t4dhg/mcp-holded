@@ -1,6 +1,6 @@
 # @t4dhg/mcp-holded
 
-> MCP server for the Holded API v2 (Spanish ERP: invoicing, accounting, treasury, CRM, projects, team). Thirteen hierarchical tools with an `action` parameter, validated inputs and outputs, confirmation gates on destructive operations.
+> MCP server for the Holded API v2 (Spanish ERP: invoicing, accounting, treasury, CRM, projects, team). Thirteen hierarchical tools with an `action` parameter, seven MCP resources and six MCP prompts, validated inputs and outputs, confirmation gates on destructive operations.
 
 ## Configuration
 
@@ -33,3 +33,24 @@ Actions marked * require `confirm: true`; the first call without it sends nothin
 - Ledger dates are DD/MM/YYYY. Everything else ISO 8601.
 - Bad key gives 403, not 401. Unknown route gives 404 `{ message }`. Rate limit 100 requests per minute.
 - Creates return `{ id }`; the tools re-read the record.
+
+## Resources
+
+- holded://guide/api-behaviour: verified v2 behaviour. Bearer auth, 403 not 401 on a bad key, cursor pagination, comma decimals on documents and dot decimals on payments/treasury/accounting, DD/MM/YYYY ledger dates, RFC 7807 errors, ignored query parameters, 100 req/min, writes never retried.
+- holded://guide/document-types: the nine sales and four purchase types, Spanish names, and the per-type verb matrix.
+- holded://guide/irreversible-operations: every gated operation, generated from the policy table, plus the Verifactu consequence of approve.
+- holded://reference/taxes: tax keys to use verbatim in a line's taxes array.
+- holded://reference/numbering-series: series per document type, with format and last number.
+- holded://reference/payment-methods: method ids for record_payment.
+- holded://reference/accounting-accounts: chart of accounts for ledger entries.
+
+## Prompts
+
+All read-only; each emits the tool calls for a person to approve.
+
+- holded_aged_receivables (as_of, contact_id): outstanding invoices by age bucket and contact.
+- holded_vat_summary (start_date, end_date): output and input VAT by tax key. Aid for Modelo 303, not a filing.
+- holded_bank_reconciliation (start_date, end_date, account_id): proposed matches plus unmatched movements and payments.
+- holded_contact_statement (contact_id | name): invoiced, paid and outstanding for one contact.
+- holded_month_end_close (start_date, end_date): drafts, overdue invoices and inbox documents still open.
+- holded_draft_invoice (contact, description, date): assembles a create payload for review, offering only sales-usable tax keys. Never approves.

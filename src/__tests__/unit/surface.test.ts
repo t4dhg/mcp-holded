@@ -79,3 +79,49 @@ describe('documented counts match the registered surface', () => {
     expect(readFileSync(llmsPath, 'utf8')).toMatch(phrase);
   });
 });
+
+describe('resources and prompts are documented with correct counts', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    setEnv();
+  });
+
+  it('states the resource count correctly in README and llms.txt', async () => {
+    const client = await connectedClient();
+    const { resources } = await client.listResources();
+    const phrase = new RegExp(`${WORDS[resources.length]} (MCP )?resources`, 'i');
+    expect(resources.length).toBe(7);
+    expect(readFileSync(readmePath, 'utf8')).toMatch(phrase);
+    expect(readFileSync(llmsPath, 'utf8')).toMatch(phrase);
+  });
+
+  it('states the prompt count correctly in README and llms.txt', async () => {
+    const client = await connectedClient();
+    const { prompts } = await client.listPrompts();
+    const phrase = new RegExp(`${WORDS[prompts.length]} (MCP )?prompts`, 'i');
+    expect(prompts.length).toBe(6);
+    expect(readFileSync(readmePath, 'utf8')).toMatch(phrase);
+    expect(readFileSync(llmsPath, 'utf8')).toMatch(phrase);
+  });
+
+  it('documents every registered resource URI in the README', async () => {
+    const client = await connectedClient();
+    const { resources } = await client.listResources();
+    const readme = readFileSync(readmePath, 'utf8');
+    const undocumented = resources.map(r => r.uri).filter(uri => !readme.includes(uri));
+    expect(undocumented, `resource URIs missing from README:\n${undocumented.join('\n')}`).toEqual(
+      []
+    );
+  });
+
+  it('documents every registered prompt name in the README', async () => {
+    const client = await connectedClient();
+    const { prompts } = await client.listPrompts();
+    const readme = readFileSync(readmePath, 'utf8');
+    const undocumented = prompts.map(p => p.name).filter(name => !readme.includes(name));
+    expect(undocumented, `prompt names missing from README:\n${undocumented.join('\n')}`).toEqual(
+      []
+    );
+  });
+});

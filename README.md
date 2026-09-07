@@ -79,6 +79,35 @@ Every tool takes an `action`. List actions accept `limit` (1 to 200) and `cursor
 }
 ```
 
+## Resources
+
+Seven MCP resources give a model the context it needs before it can make a correct call. Attach them in your client, or read them by URI.
+
+| URI                                      | What it holds                                                                                                                                                                                                                                                    |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `holded://guide/api-behaviour`           | Verified v2 behaviour: Bearer auth and the 403-not-401 quirk, cursor pagination, the two decimal conventions, `DD/MM/YYYY` ledger dates, RFC 7807 errors, silently ignored query parameters, the 100 request per minute limit, and why writes are never retried. |
+| `holded://guide/document-types`          | The nine sales and four purchase types with their Spanish names, and which verbs each supports. Recurring invoices, purchase refunds and estimates each lack verbs the others have.                                                                              |
+| `holded://guide/irreversible-operations` | Every gated operation with its risk and effect, generated from the policy table so it cannot drift, plus why approving a sales document is irreversible under Verifactu.                                                                                         |
+| `holded://reference/taxes`               | The account's tax keys, names and percentages. A document line needs the key verbatim, for example `s_iva_21`.                                                                                                                                                   |
+| `holded://reference/numbering-series`    | The numbering series configured for each document type, with their formats and last-used numbers.                                                                                                                                                                |
+| `holded://reference/payment-methods`     | Payment method ids, needed by `record_payment` and by a document's `payment_method_id`.                                                                                                                                                                          |
+| `holded://reference/accounting-accounts` | The chart of accounts, needed for ledger entries. Spanish PGC numbering, which cannot be guessed.                                                                                                                                                                |
+
+The three guides are static. The four references read the account's own configuration and are cached for fifteen minutes, because clients re-read resources at the start of every conversation. A reference whose read fails returns an explanation and the tool to fall back to; it never throws.
+
+## Prompts
+
+Six MCP prompts run the workflows this server exists for. Each one pre-reads the facts and hands back a report plus the exact tool calls to act on it. **None of them writes.** Where a change is needed, the prompt emits the gated call for you to approve.
+
+| Prompt                       | Arguments                              | What it does                                                                                                                                                                                                                       |
+| ---------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `holded_aged_receivables`    | `as_of`, `contact_id`                  | Outstanding sales invoices bucketed by days overdue and grouped by contact, worst first. Counts the unpaid remainder, not the document total.                                                                                      |
+| `holded_vat_summary`         | `start_date`, `end_date`               | Output and input VAT by tax key for a period, with base and quota. A working aid for preparing Modelo 303, not a filing and not tax advice. Defaults to the previous calendar quarter.                                             |
+| `holded_bank_reconciliation` | `start_date`, `end_date`, `account_id` | Proposes matches between bank movements and recorded payments, then lists what is unmatched on both sides. Defaults to the previous month.                                                                                         |
+| `holded_contact_statement`   | `contact_id` or `name`                 | Invoiced, paid and outstanding for one contact, document by document, with the oldest unpaid item called out. When the API omits a document's pending figure, derives it as total less paid and discloses which rows were derived. |
+| `holded_month_end_close`     | `start_date`, `end_date`               | What is still open at the end of a period: documents in draft, invoices past due, inbox documents, each with the call that resolves it.                                                                                            |
+| `holded_draft_invoice`       | `contact`, `description`, `date`       | Resolves the contact, offers only the tax keys usable on a sales document, and assembles a create payload for you to review. Creates nothing, and never approves.                                                                  |
+
 ## Safety
 
 ### Operations that require confirmation
