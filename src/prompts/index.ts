@@ -7,7 +7,9 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { PromptDeps } from './shared.js';
 import { registerReceivablesPrompt } from './receivables.js';
+import { registerVatPrompt } from './vat.js';
 
 export function registerPrompts(server: McpServer, deps: PromptDeps = {}): void {
   registerReceivablesPrompt(server, deps);
+  registerVatPrompt(server, deps);
 }

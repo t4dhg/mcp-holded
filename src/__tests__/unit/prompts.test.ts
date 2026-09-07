@@ -15,6 +15,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../tools/index.js';
 import { setEnv, stubFetch } from './helpers.js';
 import { buildAgeingReport } from '../../prompts/receivables.js';
+import { summariseByTaxKey } from '../../prompts/vat.js';
 
 async function connectedClient(): Promise<Client> {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -231,5 +232,154 @@ describe('holded_aged_receivables', () => {
       arguments: { as_of: '2026-09-07' },
     });
     expect(promptText(result)).toMatch(/Could not read/i);
+  });
+});
+
+describe('holded_vat_summary', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    setEnv();
+  });
+
+  const invoices = [
+    {
+      id: '1',
+      contact_name: 'Acme SL',
+      date: '2026-04-10',
+      subtotal: '1000,00',
+      discount: '0,00',
+      total: '1210,00',
+      tax: '210,00',
+      currency: 'EUR',
+      status: 'paid',
+      lines: [{ name: 'Licence', price: '1000,00', units: '1', taxes: ['s_iva0'] }],
+    },
+    {
+      id: '2',
+      contact_name: 'Beta SA',
+      date: '2026-05-02',
+      subtotal: '200,00',
+      discount: '0,00',
+      total: '220,00',
+      tax: '20,00',
+      currency: 'EUR',
+      status: 'paid',
+      lines: [{ name: 'Books', price: '200,00', units: '1', taxes: ['s_nos'] }],
+    },
+    {
+      id: '3',
+      contact_name: 'Acme SL',
+      date: '2026-06-20',
+      subtotal: '500,00',
+      discount: '0,00',
+      total: '605,00',
+      tax: '105,00',
+      currency: 'EUR',
+      status: 'paid',
+      lines: [{ name: 'Support', price: '500,00', units: '1', taxes: ['s_iva0'] }],
+    },
+  ];
+
+  const RATES = new Map<string, number>([
+    ['s_iva0', 21],
+    ['s_nos', 10],
+  ]);
+
+  it('groups base and quota by tax key using the account rates', () => {
+    const rows = summariseByTaxKey(invoices, RATES);
+    const first = rows.find(r => r.key === 's_iva0');
+    expect(first?.base).toBeCloseTo(1500, 2);
+    expect(first?.quota).toBeCloseTo(315, 2);
+    expect(first?.count).toBe(2);
+    expect(first?.rateKnown).toBe(true);
+    const second = rows.find(r => r.key === 's_nos');
+    expect(second?.base).toBeCloseTo(200, 2);
+    expect(second?.quota).toBeCloseTo(20, 2);
+  });
+
+  it('reports a zero quota and flags a key that is not a configured tax', () => {
+    const rows = summariseByTaxKey(invoices, new Map());
+    expect(rows.every(r => r.quota === 0)).toBe(true);
+    expect(rows.every(r => r.rateKnown === false)).toBe(true);
+  });
+
+  it('does not infer a rate from the key name', () => {
+    const named = [
+      {
+        id: '9',
+        date: '2026-04-01',
+        subtotal: '100,00',
+        discount: '0,00',
+        total: '121,00',
+        tax: '21,00',
+        currency: 'EUR',
+        status: 'paid',
+        lines: [{ name: 'Thing', price: '100,00', units: '1', taxes: ['s_iva_21'] }],
+      },
+    ];
+    const rows = summariseByTaxKey(named as never, new Map());
+    expect(rows[0]?.quota).toBe(0);
+    expect(rows[0]?.rateKnown).toBe(false);
+  });
+
+  it('groups lines with no tax key under an explicit label', () => {
+    const rows = summariseByTaxKey(
+      [
+        {
+          id: '4',
+          date: '2026-04-01',
+          subtotal: '100,00',
+          discount: '0,00',
+          total: '100,00',
+          tax: '0,00',
+          currency: 'EUR',
+          status: 'paid',
+          lines: [{ name: 'Exempt', price: '100,00', units: '1' }],
+        },
+      ] as never,
+      RATES
+    );
+    expect(rows.map(r => r.key)).toContain('no tax key');
+    expect(rows[0]?.rateKnown).toBe(false);
+  });
+
+  it('defaults to the previous calendar quarter and disclaims advice', async () => {
+    stubFetch(
+      {
+        body: {
+          items: [
+            {
+              id: 't1',
+              name: 'IVA general',
+              amount: '21',
+              scope: 'sales',
+              key: 's_iva0',
+              group: 'iva',
+              type: 'percentage',
+            },
+            {
+              id: 't2',
+              name: 'Recargo',
+              amount: '10',
+              scope: 'sales',
+              key: 's_nos',
+              group: 'iva',
+              type: 'percentage',
+            },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      { body: { items: invoices, cursor: null, has_more: false } },
+      { body: { items: [], cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({ name: 'holded_vat_summary', arguments: {} });
+    const body = promptText(result);
+    expect(body).toMatch(/Modelo 303/);
+    expect(body).toMatch(/not a filing/i);
+    expect(body).toMatch(/not tax advice/i);
   });
 });
