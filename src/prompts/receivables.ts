@@ -1,0 +1,173 @@
+/**
+ * holded_aged_receivables: what is owed, by whom, and how late.
+ *
+ * Outstanding means the unpaid remainder (`payments_pending`), not the
+ * document total, so a part-paid invoice contributes only what is left.
+ */
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import * as api from '../api/index.js';
+import type { DocumentSummary } from '../schemas/index.js';
+import {
+  PRE_READ_LIMIT,
+  READ_ONLY_NOTICE,
+  formatAmount,
+  parseAmount,
+  preRead,
+  toolCall,
+  today,
+  userMessage,
+  type PromptDeps,
+} from './shared.js';
+
+const BUCKETS: { label: string; from: number; to: number }[] = [
+  { label: 'Over 90 days', from: 91, to: Number.POSITIVE_INFINITY },
+  { label: '61 to 90 days', from: 61, to: 90 },
+  { label: '31 to 60 days', from: 31, to: 60 },
+  { label: '1 to 30 days', from: 1, to: 30 },
+  { label: 'Not yet due', from: Number.NEGATIVE_INFINITY, to: 0 },
+];
+
+function daysLate(dueDate: string | null | undefined, asOf: string): number {
+  if (!dueDate) return 0;
+  const due = Date.parse(dueDate.slice(0, 10));
+  const at = Date.parse(asOf);
+  if (Number.isNaN(due) || Number.isNaN(at)) return 0;
+  return Math.floor((at - due) / 86_400_000);
+}
+
+/** Unpaid remainder, falling back to the total when the API omits the pending figure. */
+function outstanding(doc: DocumentSummary): number {
+  const pending = parseAmount(doc.payments_pending ?? null);
+  return pending > 0 ? pending : parseAmount(doc.total);
+}
+
+export function buildAgeingReport(docs: DocumentSummary[], asOf: string): string {
+  const open = docs.filter(d => outstanding(d) > 0);
+  if (open.length === 0) return `Nothing outstanding as at ${asOf}.`;
+
+  const bucketOf = (doc: DocumentSummary) => {
+    const late = daysLate(doc.due_date, asOf);
+    const found = BUCKETS.find(b => late >= b.from && late <= b.to);
+    if (!found)
+      throw new Error(`No age bucket covers ${late} days late; the ranges must be gapless.`);
+    return found;
+  };
+
+  const bucketTotals = BUCKETS.map(bucket => ({
+    label: bucket.label,
+    total: open
+      .filter(d => bucketOf(d).label === bucket.label)
+      .reduce((sum, d) => sum + outstanding(d), 0),
+    count: open.filter(d => bucketOf(d).label === bucket.label).length,
+  })).filter(b => b.count > 0);
+
+  const byContact = new Map<string, { name: string; total: number; docs: DocumentSummary[] }>();
+  for (const doc of open) {
+    const key = doc.contact_id ?? doc.contact_name ?? 'unknown';
+    const entry = byContact.get(key) ?? {
+      name: doc.contact_name ?? `Contact ${key}`,
+      total: 0,
+      docs: [],
+    };
+    entry.total += outstanding(doc);
+    entry.docs.push(doc);
+    byContact.set(key, entry);
+  }
+
+  const contacts = [...byContact.entries()].sort((a, b) => b[1].total - a[1].total);
+  const grand = open.reduce((sum, d) => sum + outstanding(d), 0);
+  const currency = open[0]?.currency;
+
+  const lines: string[] = [
+    `## Outstanding as at ${asOf}`,
+    '',
+    `Total ${formatAmount(grand, currency)} across ${open.length} document${open.length === 1 ? '' : 's'} and ${contacts.length} contact${contacts.length === 1 ? '' : 's'}.`,
+    '',
+    '| Age | Documents | Outstanding |',
+    '| --- | --- | --- |',
+    ...bucketTotals.map(b => `| ${b.label} | ${b.count} | ${formatAmount(b.total, currency)} |`),
+    '',
+    '## By contact, worst first',
+    '',
+    '| Contact | Outstanding | Documents |',
+    '| --- | --- | --- |',
+  ];
+
+  for (const [id, entry] of contacts) {
+    const detail = entry.docs
+      .sort((a, b) => daysLate(b.due_date, asOf) - daysLate(a.due_date, asOf))
+      .map(d => {
+        const late = daysLate(d.due_date, asOf);
+        const age = late > 0 ? `${late}d late` : 'not due';
+        return `${d.document_number ?? d.id} ${formatAmount(outstanding(d), d.currency)} (${age})`;
+      })
+      .join('; ');
+    lines.push(`| ${entry.name} (${id}) | ${formatAmount(entry.total, currency)} | ${detail} |`);
+  }
+
+  return lines.join('\n');
+}
+
+export function registerReceivablesPrompt(server: McpServer, deps: PromptDeps = {}): void {
+  server.registerPrompt(
+    'holded_aged_receivables',
+    {
+      title: 'Aged receivables',
+      description:
+        'Who owes money, how much, and how late, bucketed by days overdue and grouped by ' +
+        'contact. Read-only. Defaults to today.',
+      argsSchema: {
+        as_of: z.string().optional().describe('Ageing date YYYY-MM-DD (default: today)'),
+        contact_id: z.string().optional().describe('Limit to one contact'),
+      },
+    },
+    async ({ as_of, contact_id }) => {
+      const asOf = as_of ?? today(deps);
+      const read = await preRead('the outstanding sales invoices', () =>
+        api.listDocuments('invoice', {
+          status: 'pending',
+          limit: PRE_READ_LIMIT,
+          ...(contact_id ? { contact_id } : {}),
+        })
+      );
+
+      if (!read.ok) {
+        return userMessage([
+          `Report the aged receivables as at ${asOf}.`,
+          '',
+          read.message,
+          '',
+          `Say the read failed and suggest retrying with ${toolCall('holded_sales', { action: 'list', type: 'invoice', status: 'pending' })}.`,
+        ]);
+      }
+
+      const page = read.value;
+      const coverage = page.has_more
+        ? `Data read: the first ${page.items.length} pending invoices. There are more, so these figures are a floor, not a total. Continue with cursor "${page.cursor}".`
+        : `Data read: all ${page.items.length} pending invoices.`;
+
+      return userMessage([
+        `Report the aged receivables as at ${asOf}${contact_id ? ` for contact ${contact_id}` : ''}.`,
+        '',
+        'The ageing has already been run for you:',
+        '',
+        coverage,
+        '',
+        buildAgeingReport(page.items, asOf),
+        '',
+        'Do this:',
+        '1. Read the Data read line first. If the figures are a floor rather than a total, say so before any number.',
+        '2. Give the total outstanding and the split by age bucket.',
+        '3. Name the contacts to chase first, worst and oldest first, with the document numbers.',
+        '4. Flag any part-paid document, where only the remainder is outstanding.',
+        '5. If nothing is outstanding, say so in one line.',
+        '',
+        `To see one contact's full history: ${toolCall('holded_contacts', { action: 'get', id: '<contact_id>' })}, or use the holded_contact_statement prompt.`,
+        `To record a payment once received: ${toolCall('holded_sales', { action: 'record_payment', type: 'invoice', id: '<document_id>' })}.`,
+        '',
+        READ_ONLY_NOTICE,
+      ]);
+    }
+  );
+}

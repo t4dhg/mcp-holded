@@ -6,8 +6,8 @@
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { PromptDeps } from './shared.js';
+import { registerReceivablesPrompt } from './receivables.js';
 
-export function registerPrompts(server: McpServer, _deps: PromptDeps = {}): void {
-  // Prompt registrations are added by the tasks that follow.
-  void server;
+export function registerPrompts(server: McpServer, deps: PromptDeps = {}): void {
+  registerReceivablesPrompt(server, deps);
 }
