@@ -16,6 +16,7 @@ import { createServer } from '../../tools/index.js';
 import { setEnv, stubFetch } from './helpers.js';
 import { buildAgeingReport } from '../../prompts/receivables.js';
 import { summariseByTaxKey } from '../../prompts/vat.js';
+import { matchMovements } from '../../prompts/reconciliation.js';
 
 async function connectedClient(): Promise<Client> {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -433,5 +434,194 @@ describe('holded_vat_summary', () => {
     expect(body).toMatch(/Modelo 303/);
     expect(body).toMatch(/not a filing/i);
     expect(body).toMatch(/not tax advice/i);
+  });
+});
+
+describe('holded_bank_reconciliation', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    setEnv();
+  });
+
+  // Movements carry a signed amount and their own currency. Payments carry an
+  // unsigned amount, no currency, and their direction in `type`: `payment` is
+  // money out, `collection` is money in.
+  const movements = [
+    {
+      id: 'm1',
+      banking_account_id: 'b1',
+      amount: '-1210.00',
+      currency: 'EUR',
+      status: 'pending',
+      booking_date: '2026-08-05T00:00:00+00:00',
+      description: 'Supplier transfer',
+      reconciled_amount: null,
+    },
+    {
+      id: 'm2',
+      banking_account_id: 'b1',
+      amount: '-99.00',
+      currency: 'EUR',
+      status: 'pending',
+      booking_date: '2026-08-06T00:00:00+00:00',
+      description: 'Unknown',
+      reconciled_amount: null,
+    },
+    {
+      id: 'm3',
+      banking_account_id: 'b1',
+      amount: '500.00',
+      currency: 'EUR',
+      status: 'pending',
+      booking_date: '2026-08-07T00:00:00+00:00',
+      description: 'Customer receipt',
+      reconciled_amount: null,
+    },
+  ];
+  const payments = [
+    {
+      id: 'p1',
+      type: 'payment',
+      amount: '1210.00',
+      date: '2026-08-04T00:00:00+00:00',
+      status: 'paid',
+      contact_name: 'Acme SL',
+      reconciliation_status: 'pending',
+    },
+    {
+      id: 'p2',
+      type: 'collection',
+      amount: '500.00',
+      date: '2026-08-07T00:00:00+00:00',
+      status: 'paid',
+      contact_name: 'Beta SA',
+      reconciliation_status: 'pending',
+    },
+    {
+      id: 'p3',
+      type: 'payment',
+      amount: '42.00',
+      date: '2026-08-20T00:00:00+00:00',
+      status: 'paid',
+      contact_name: 'Gamma SL',
+      reconciliation_status: 'pending',
+    },
+    {
+      id: 'p4',
+      type: 'payment',
+      amount: '99.00',
+      date: '2026-08-06T00:00:00+00:00',
+      status: 'paid',
+      contact_name: 'Delta SL',
+      reconciliation_status: 'reconciled',
+    },
+  ];
+
+  it('matches on magnitude and direction within a few days and leaves the rest unmatched', () => {
+    const result = matchMovements(movements as never, payments as never);
+    // m1 (out) <-> p1 (payment), m3 (in) <-> p2 (collection). m2's only
+    // amount match, p4, is already reconciled and therefore excluded, so m2
+    // stays unmatched. p3 has no movement of matching amount and direction.
+    expect(result.matched).toHaveLength(2);
+    expect(result.matched.map(m => `${m.movement.id}:${m.payment.id}`)).toEqual(['m1:p1', 'm3:p2']);
+    expect(result.unmatchedMovements.map(m => m.id)).toEqual(['m2']);
+    expect(result.unmatchedPayments.map(p => p.id)).toEqual(['p3']);
+  });
+
+  it('does not match the same payment twice', () => {
+    const twin = [...movements, { ...movements[0]!, id: 'm4' }];
+    const result = matchMovements(twin as never, payments as never);
+    expect(result.matched).toHaveLength(2);
+    expect(result.unmatchedMovements.map(m => m.id)).toContain('m4');
+  });
+
+  it('does not match across directions', () => {
+    const out = [
+      {
+        id: 'x1',
+        banking_account_id: 'b1',
+        amount: '-500.00',
+        currency: 'EUR',
+        status: 'pending',
+        booking_date: '2026-08-07T00:00:00+00:00',
+        reconciled_amount: null,
+      },
+    ];
+    const incoming = [
+      {
+        id: 'y1',
+        type: 'collection',
+        amount: '500.00',
+        date: '2026-08-07T00:00:00+00:00',
+        status: 'paid',
+        reconciliation_status: 'pending',
+      },
+    ];
+    const result = matchMovements(out as never, incoming as never);
+    expect(result.matched).toHaveLength(0);
+    expect(result.unmatchedMovements.map(m => m.id)).toEqual(['x1']);
+    expect(result.unmatchedPayments.map(p => p.id)).toEqual(['y1']);
+  });
+
+  it('ignores a payment Holded has already reconciled', () => {
+    const result = matchMovements(movements as never, payments as never);
+    const everyId = [
+      ...result.matched.map(m => m.payment.id),
+      ...result.unmatchedPayments.map(p => p.id),
+    ];
+    expect(everyId).not.toContain('p4');
+  });
+
+  it('will not guess when several bank accounts exist', async () => {
+    stubFetch({
+      body: {
+        items: [
+          {
+            id: 'b1',
+            name: 'Main',
+            type: 'bank',
+            currency: 'EUR',
+            balance: '100.00',
+            archived: false,
+          },
+          {
+            id: 'b2',
+            name: 'Reserve',
+            type: 'bank',
+            currency: 'EUR',
+            balance: '50.00',
+            archived: false,
+          },
+        ],
+        cursor: null,
+        has_more: false,
+      },
+    });
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_bank_reconciliation',
+      arguments: { start_date: '2026-08-01', end_date: '2026-08-31' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/more than one/i);
+    expect(body).toContain('b1');
+    expect(body).toContain('b2');
+  });
+
+  it('emits a gated reconcile call for the person to approve', async () => {
+    stubFetch(
+      { body: { items: movements, cursor: null, has_more: false } },
+      { body: { items: payments, cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_bank_reconciliation',
+      arguments: { start_date: '2026-08-01', end_date: '2026-08-31', account_id: 'b1' },
+    });
+    const body = promptText(result);
+    expect(body).toContain("action: 'reconcile'");
+    expect(body).toContain('confirm: true');
+    expect(body).toMatch(/written nothing/i);
   });
 });
