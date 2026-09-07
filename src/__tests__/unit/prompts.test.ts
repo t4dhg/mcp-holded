@@ -1008,6 +1008,28 @@ describe('holded_month_end_close', () => {
     expect(checklist).not.toMatch(/4 inbox/);
   });
 
+  it('does not claim the inbox is clear when it could not be read, and says so explicitly', () => {
+    const checklist = buildChecklist({
+      drafts: [],
+      overdue: [],
+      inbox: null,
+      asOf: '2026-08-31',
+    });
+    expect(checklist).not.toMatch(/no inbox documents/i);
+    expect(checklist).toMatch(/could not be read/i);
+  });
+
+  it('still reports the document side clean when the inbox was actually read and found empty', () => {
+    const checklist = buildChecklist({
+      drafts: [],
+      overdue: [],
+      inbox: { open: 0, done: 0 },
+      asOf: '2026-08-31',
+    });
+    expect(checklist).toMatch(/nothing open/i);
+    expect(checklist).not.toMatch(/could not be read/i);
+  });
+
   it('is registered and delegates the bank side to the reconciliation prompt, without counting done inbox documents as open', async () => {
     stubFetch(
       { body: { items: [draft, overdue], cursor: null, has_more: false } },
@@ -1047,5 +1069,7 @@ describe('holded_month_end_close', () => {
     const body = promptText(result);
     expect(body).toMatch(/Inbox not read/i);
     expect(body).not.toMatch(/\d+ inbox document/);
+    expect(body).not.toMatch(/no inbox documents/i);
+    expect(body).toMatch(/could not be read/i);
   });
 });

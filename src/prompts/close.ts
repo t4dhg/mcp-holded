@@ -12,6 +12,13 @@
  * verified against real data to mean complete; every other value is treated
  * as needing attention rather than guessed at.
  *
+ * A failed inbox read is a third state, distinct from "read and found
+ * nothing open". `inbox: null` means the read failed: whether any supplier
+ * documents are waiting is unknown, and the checklist says so explicitly
+ * rather than folding it into the clean case. Rendering an unread inbox as
+ * clean would be an unwarranted assurance, which costs trust the same way a
+ * false positive does, just in the other direction.
+ *
  * The bank side is delegated to holded_bank_reconciliation rather than
  * duplicated, because that prompt already resolves the treasury account.
  */
@@ -43,7 +50,8 @@ function isOverdue(doc: DocumentSummary, asOf: string): boolean {
 export function buildChecklist(input: {
   drafts: DocumentSummary[];
   overdue: DocumentSummary[];
-  inbox: { open: number; done: number };
+  /** Open/done counts from a successful read, or `null` when the inbox could not be read. */
+  inbox: { open: number; done: number } | null;
   asOf: string;
 }): string {
   const items: string[] = [];
@@ -67,7 +75,11 @@ export function buildChecklist(input: {
     );
   }
 
-  if (input.inbox.open > 0) {
+  if (input.inbox === null) {
+    items.push(
+      `${items.length + 1}. **Inbox could not be read.** Whether any supplier documents are waiting is unknown; check by hand. ${toolCall('holded_inbox', { action: 'list' })}.`
+    );
+  } else if (input.inbox.open > 0) {
     items.push(
       `${items.length + 1}. **${input.inbox.open} inbox document${input.inbox.open === 1 ? '' : 's'} still to process**${input.inbox.done > 0 ? `, with ${input.inbox.done} already done` : ''}. Each open one is a supplier document that may still need attaching to a purchase. ${toolCall('holded_inbox', { action: 'list' })}.`
     );
@@ -76,7 +88,9 @@ export function buildChecklist(input: {
   const bankItem = `${items.length + 1}. **Bank reconciliation.** Not checked here. Run the \`holded_bank_reconciliation\` prompt for the same window; it resolves the treasury account and proposes the matches.`;
   items.push(bankItem);
 
-  if (input.drafts.length === 0 && input.overdue.length === 0 && input.inbox.open === 0) {
+  const inboxClean = input.inbox !== null && input.inbox.open === 0;
+
+  if (input.drafts.length === 0 && input.overdue.length === 0 && inboxClean) {
     return `## Close as at ${input.asOf}\n\nNothing open on the document side: no drafts, nothing past due, no inbox documents still to process.\n\n${bankItem}`;
   }
 
@@ -126,11 +140,12 @@ export function registerClosePrompt(server: McpServer, deps: PromptDeps = {}): v
       }
 
       const items = invoices.value.items;
-      const inboxItems = inbox.ok ? inbox.value.items : [];
-      const inboxDone = inboxItems.filter(d => d.status === 'done').length;
       const inboxCounts = inbox.ok
-        ? { open: inboxItems.length - inboxDone, done: inboxDone }
-        : { open: 0, done: 0 };
+        ? {
+            open: inbox.value.items.filter(d => d.status !== 'done').length,
+            done: inbox.value.items.filter(d => d.status === 'done').length,
+          }
+        : null;
 
       const checklist = buildChecklist({
         drafts: items.filter(d => d.draft === true),
@@ -151,9 +166,10 @@ export function registerClosePrompt(server: McpServer, deps: PromptDeps = {}): v
         '',
         'Do this:',
         '1. Read the Data read line first and say if the checklist is incomplete.',
-        '2. Work through the items in order, most consequential first.',
-        '3. For anything in draft, say explicitly that approving is irreversible under Verifactu before offering the call.',
-        '4. Do not approve, send or delete anything yourself. Present the calls and let the person decide.',
+        '2. Check whether any read failed before trusting this checklist, the inbox included: an unread inbox is unknown, not clean.',
+        '3. Work through the items in order, most consequential first.',
+        '4. For anything in draft, say explicitly that approving is irreversible under Verifactu before offering the call.',
+        '5. Do not approve, send or delete anything yourself. Present the calls and let the person decide.',
         '',
         READ_ONLY_NOTICE,
       ]);
