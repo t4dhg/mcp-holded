@@ -2,6 +2,10 @@ name: Feature request
 description: An endpoint, action, resource or prompt that is missing
 labels: [enhancement]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste your API key, a `pat_` token, or an unredacted response containing customer data. This project builds schemas from real responses, so a sample is genuinely useful, but redact ids, tax ids, names, addresses, bank details and amounts before posting. A token pasted into a public issue is the most likely way a credential leaks from this project.
   - type: textarea
     id: problem
     attributes:
@@ -18,5 +22,5 @@ body:
     id: response
     attributes:
       label: A real response from that endpoint, anonymised
-      description: This server builds schemas from real responses, so a sample makes the change much faster.
+      description: This server builds schemas from real responses, so a sample makes the change much faster. Redact it before pasting.
       render: json
