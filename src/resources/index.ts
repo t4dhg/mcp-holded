@@ -8,8 +8,10 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerGuideResources } from './guides.js';
 import { registerIrreversibleResource } from './irreversible.js';
+import { registerReferenceResources } from './references.js';
 
 export function registerResources(server: McpServer): void {
   registerGuideResources(server);
   registerIrreversibleResource(server);
+  registerReferenceResources(server);
 }

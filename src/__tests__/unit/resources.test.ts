@@ -2,8 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { createServer } from '../../tools/index.js';
-import { setEnv } from './helpers.js';
+import { setEnv, stubFetch } from './helpers.js';
 import { gatedOperations } from '../../write-safety.js';
+import { clearReferenceCache } from '../../resources/references.js';
 
 async function connectedClient(): Promise<Client> {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -94,5 +95,60 @@ describe('the generated irreversible-operations guide', () => {
       await client.readResource({ uri: 'holded://guide/irreversible-operations' })
     );
     expect(body).toMatch(/create_contact/);
+  });
+});
+
+describe('live reference resources', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    setEnv();
+    clearReferenceCache();
+  });
+
+  it('registers all four references', async () => {
+    const client = await connectedClient();
+    const { resources } = await client.listResources();
+    const uris = resources.map(r => r.uri);
+    expect(uris).toContain('holded://reference/taxes');
+    expect(uris).toContain('holded://reference/numbering-series');
+    expect(uris).toContain('holded://reference/payment-methods');
+    expect(uris).toContain('holded://reference/accounting-accounts');
+  });
+
+  it('renders tax keys so a model can copy them into an invoice line', async () => {
+    stubFetch({
+      body: { items: [{ id: '1', name: 'IVA 21%', percentage: '21', key: 's_iva_21' }] },
+    });
+    const client = await connectedClient();
+    const body = textOf(await client.readResource({ uri: 'holded://reference/taxes' }));
+    expect(body).toContain('s_iva_21');
+  });
+
+  it('memoises a reference read so a second read makes no further call', async () => {
+    const fetchMock = stubFetch(
+      { body: { items: [{ id: '1', name: 'Transfer', type: 'bank' }] } },
+      { body: { items: [{ id: '2', name: 'Should not be fetched', type: 'bank' }] } }
+    );
+    const client = await connectedClient();
+    await client.readResource({ uri: 'holded://reference/payment-methods' });
+    await client.readResource({ uri: 'holded://reference/payment-methods' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns readable markdown instead of throwing when the read fails', async () => {
+    stubFetch({ status: 403, body: { title: 'Access denied', status: 403 } });
+    const client = await connectedClient();
+    const result = await client.readResource({ uri: 'holded://reference/taxes' });
+    const body = textOf(result);
+    expect(body).toMatch(/could not be read/i);
+    expect(body).toContain('holded_accounting');
+  });
+
+  it('reads one numbering series per configured type', async () => {
+    const fetchMock = stubFetch(...Array.from({ length: 8 }, () => ({ body: { items: [] } })));
+    const client = await connectedClient();
+    await client.readResource({ uri: 'holded://reference/numbering-series' });
+    expect(fetchMock).toHaveBeenCalledTimes(8);
   });
 });
