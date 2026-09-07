@@ -74,6 +74,78 @@ function reconciledDisplay(movement: BankMovement): string {
   return formatAmount(parseAmount(movement.reconciled_amount), movement.currency);
 }
 
+/**
+ * True when a payment carries both fields the reconcile endpoint requires.
+ * `ReconcileInput` is a strict object: it accepts exactly `document_id` and
+ * `document_type` per document, nothing else, so a call can only be filled
+ * in for real when the payment actually has both.
+ */
+function hasDocumentRef(
+  payment: Payment
+): payment is Payment & { document_id: string; document_type: string } {
+  return (
+    typeof payment.document_id === 'string' &&
+    payment.document_id.length > 0 &&
+    typeof payment.document_type === 'string' &&
+    payment.document_type.length > 0
+  );
+}
+
+/**
+ * The gated reconcile calls, one per proposed match, filled in with the real
+ * document reference rather than a placeholder. A match whose payment has no
+ * `document_id` or `document_type` cannot be reconciled by document
+ * reference without inventing a value, so it is listed separately with a
+ * pointer to look the payment up instead of a call that would fail
+ * validation.
+ */
+function reconcileSection(
+  accountId: string,
+  matched: { movement: BankMovement; payment: Payment }[]
+): string {
+  if (matched.length === 0) {
+    return 'Nothing to reconcile: there are no proposed matches this period.';
+  }
+
+  const ready = matched.filter(
+    (
+      m
+    ): m is {
+      movement: BankMovement;
+      payment: Payment & { document_id: string; document_type: string };
+    } => hasDocumentRef(m.payment)
+  );
+  const missing = matched.filter(m => !hasDocumentRef(m.payment));
+
+  const lines: string[] = [];
+
+  if (ready.length > 0) {
+    lines.push('For each match the person approves, make this call, one movement at a time:', '');
+    for (const m of ready) {
+      lines.push(
+        `- \`${m.movement.id}\` / \`${m.payment.id}\`: ${toolCall('holded_treasury', { action: 'reconcile', id: accountId, movement_id: m.movement.id, confirm: true })} with \`data: { documents: [{ document_id: '${m.payment.document_id}', document_type: '${m.payment.document_type}' }] }\`.`
+      );
+    }
+  }
+
+  if (missing.length > 0) {
+    if (ready.length > 0) lines.push('');
+    lines.push(
+      '#### Cannot reconcile by document reference',
+      '',
+      'These matches cannot be reconciled by document reference because the payment records no document:',
+      ''
+    );
+    for (const m of missing) {
+      lines.push(
+        `- \`${m.movement.id}\` / \`${m.payment.id}\`: look it up with ${toolCall('holded_payments', { action: 'get', id: m.payment.id })}.`
+      );
+    }
+  }
+
+  return lines.join('\n');
+}
+
 function dayDistance(a: string | null | undefined, b: string | null | undefined): number {
   if (!a || !b) return Number.POSITIVE_INFINITY;
   const left = Date.parse(a.slice(0, 10));
@@ -226,11 +298,11 @@ export function registerReconciliationPrompt(server: McpServer, deps: PromptDeps
         result.matched.length === 0
           ? '_None._'
           : [
-              '| Movement | Date | Amount | Reconciled | Payment | Payment date | Contact |',
-              '| --- | --- | --- | --- | --- | --- | --- |',
+              '| Movement | Date | Amount | Reconciled | Payment | Payment date | Contact | Doc type | Doc id |',
+              '| --- | --- | --- | --- | --- | --- | --- | --- | --- |',
               ...result.matched.map(
                 m =>
-                  `| \`${m.movement.id}\` | ${m.movement.booking_date ?? ''} | ${formatAmount(parseAmount(m.movement.amount), m.movement.currency)} | ${reconciledDisplay(m.movement)} | \`${m.payment.id}\` | ${m.payment.date} | ${m.payment.contact_name ?? ''} |`
+                  `| \`${m.movement.id}\` | ${m.movement.booking_date ?? ''} | ${formatAmount(parseAmount(m.movement.amount), m.movement.currency)} | ${reconciledDisplay(m.movement)} | \`${m.payment.id}\` | ${m.payment.date} | ${m.payment.contact_name ?? ''} | ${m.payment.document_type ?? ''} | ${m.payment.document_id ?? ''} |`
               ),
             ].join('\n'),
         '',
@@ -262,9 +334,9 @@ export function registerReconciliationPrompt(server: McpServer, deps: PromptDeps
         '3. List the unmatched items on both sides. These are the work: an unmatched movement usually means a payment was never recorded, and an unmatched payment usually means the bank feed has not arrived, the amount differs, or its direction did not match any movement.',
         '4. Ask the person to confirm the matches before anything is written.',
         '',
-        'Reconciling is gated. For each match the person approves, make this call, one movement at a time:',
+        'Reconciling is gated.',
         '',
-        `${toolCall('holded_treasury', { action: 'reconcile', id: accountId, movement_id: '<movement_id>', confirm: true })} with \`data: { documents: [{ id: '<document_id>', amount: '<amount>' }] }\`.`,
+        reconcileSection(accountId, result.matched),
         '',
         'Treasury amounts use a dot decimal separator. See `holded://guide/api-behaviour`.',
         '',

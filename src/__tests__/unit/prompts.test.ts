@@ -488,6 +488,8 @@ describe('holded_bank_reconciliation', () => {
       status: 'paid',
       contact_name: 'Acme SL',
       reconciliation_status: 'pending',
+      document_id: 'doc-p1',
+      document_type: 'purchase',
     },
     {
       id: 'p2',
@@ -497,6 +499,8 @@ describe('holded_bank_reconciliation', () => {
       status: 'paid',
       contact_name: 'Beta SA',
       reconciliation_status: 'pending',
+      document_id: 'doc-p2',
+      document_type: 'invoice',
     },
     {
       id: 'p3',
@@ -623,5 +627,86 @@ describe('holded_bank_reconciliation', () => {
     expect(body).toContain("action: 'reconcile'");
     expect(body).toContain('confirm: true');
     expect(body).toMatch(/written nothing/i);
+  });
+
+  it('fills in a complete, copy-pasteable reconcile call for a match whose payment has a document reference', async () => {
+    stubFetch(
+      { body: { items: movements, cursor: null, has_more: false } },
+      { body: { items: payments, cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_bank_reconciliation',
+      arguments: { start_date: '2026-08-01', end_date: '2026-08-31', account_id: 'b1' },
+    });
+    const body = promptText(result);
+    // m1 matched p1 (document_id: 'doc-p1', document_type: 'purchase').
+    expect(body).toContain("document_id: 'doc-p1'");
+    expect(body).toContain("document_type: 'purchase'");
+    expect(body).not.toContain('amount:');
+    expect(body).not.toContain('[{ id:');
+  });
+
+  it('does not emit a reconcile call for a match whose payment records no document, and lists it separately', async () => {
+    const movement = {
+      id: 'nm1',
+      banking_account_id: 'b1',
+      amount: '-77.00',
+      currency: 'EUR',
+      status: 'pending',
+      booking_date: '2026-08-10T00:00:00+00:00',
+      description: 'No document on file',
+      reconciled_amount: null,
+    };
+    const payment = {
+      id: 'np1',
+      type: 'payment',
+      amount: '77.00',
+      date: '2026-08-10T00:00:00+00:00',
+      status: 'paid',
+      contact_name: 'Undocumented SL',
+      reconciliation_status: 'pending',
+      document_id: null,
+      document_type: null,
+    };
+    stubFetch(
+      { body: { items: [movement], cursor: null, has_more: false } },
+      { body: { items: [payment], cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_bank_reconciliation',
+      arguments: { start_date: '2026-08-01', end_date: '2026-08-31', account_id: 'b1' },
+    });
+    const body = promptText(result);
+    expect(body).not.toContain("action: 'reconcile'");
+    expect(body).toMatch(/cannot reconcile by document reference/i);
+    expect(body).toContain("holded_payments({ action: 'get', id: 'np1' })");
+  });
+
+  it('says there is nothing to reconcile, without an empty section, when there are no matches', async () => {
+    const movement = {
+      id: 'zm1',
+      banking_account_id: 'b1',
+      amount: '-1.00',
+      currency: 'EUR',
+      status: 'pending',
+      booking_date: '2026-08-10T00:00:00+00:00',
+      description: 'Unmatched',
+      reconciled_amount: null,
+    };
+    stubFetch(
+      { body: { items: [movement], cursor: null, has_more: false } },
+      { body: { items: [], cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_bank_reconciliation',
+      arguments: { start_date: '2026-08-01', end_date: '2026-08-31', account_id: 'b1' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/nothing to reconcile/i);
+    expect(body).not.toContain('#### Cannot reconcile by document reference');
+    expect(body).not.toContain("action: 'reconcile'");
   });
 });
