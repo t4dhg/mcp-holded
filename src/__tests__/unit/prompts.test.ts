@@ -185,6 +185,30 @@ describe('holded_aged_receivables', () => {
     expect(buildAgeingReport([], '2026-09-07')).toMatch(/Nothing outstanding/i);
   });
 
+  it('does not resurrect a fully paid invoice at its total', () => {
+    const paid = [
+      {
+        id: '4',
+        document_number: 'F-004',
+        contact_id: 'c3',
+        contact_name: 'Gamma SL',
+        date: '2026-01-01',
+        due_date: '2026-01-31',
+        subtotal: '500,00',
+        discount: '0,00',
+        total: '605,00',
+        tax: '105,00',
+        currency: 'EUR',
+        status: 'paid',
+        payments_pending: '0,00',
+        lines: [],
+      },
+    ];
+    const report = buildAgeingReport(paid, '2026-09-07');
+    expect(report).toMatch(/Nothing outstanding/i);
+    expect(report).not.toMatch(/605\.00/);
+  });
+
   it('is registered and returns a read-only report', async () => {
     stubFetch({ body: { items: docs, cursor: null, has_more: false } });
     const client = await connectedClient();

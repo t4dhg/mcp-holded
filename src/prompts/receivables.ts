@@ -20,13 +20,24 @@ import {
   type PromptDeps,
 } from './shared.js';
 
-const BUCKETS: { label: string; from: number; to: number }[] = [
-  { label: 'Over 90 days', from: 91, to: Number.POSITIVE_INFINITY },
-  { label: '61 to 90 days', from: 61, to: 90 },
-  { label: '31 to 60 days', from: 31, to: 60 },
-  { label: '1 to 30 days', from: 1, to: 30 },
-  { label: 'Not yet due', from: Number.NEGATIVE_INFINITY, to: 0 },
-];
+const BUCKET_LABELS = [
+  'Over 90 days',
+  '61 to 90 days',
+  '31 to 60 days',
+  '1 to 30 days',
+  'Not yet due',
+] as const;
+
+type BucketLabel = (typeof BUCKET_LABELS)[number];
+
+/** Gapless and total over the integers, so there is no unreachable branch to guard. */
+function bucketFor(late: number): BucketLabel {
+  if (late > 90) return 'Over 90 days';
+  if (late > 60) return '61 to 90 days';
+  if (late > 30) return '31 to 60 days';
+  if (late > 0) return '1 to 30 days';
+  return 'Not yet due';
+}
 
 function daysLate(dueDate: string | null | undefined, asOf: string): number {
   if (!dueDate) return 0;
@@ -36,30 +47,30 @@ function daysLate(dueDate: string | null | undefined, asOf: string): number {
   return Math.floor((at - due) / 86_400_000);
 }
 
-/** Unpaid remainder, falling back to the total when the API omits the pending figure. */
+/**
+ * Unpaid remainder.
+ *
+ * The fallback to the total applies only when the API OMITS the pending
+ * figure. It must not apply when the figure is present and zero: a settled
+ * invoice carries `payments_pending: "0,00"`, and treating that as
+ * "unknown, assume the whole total" puts a paid customer back on the chase
+ * list.
+ */
 function outstanding(doc: DocumentSummary): number {
-  const pending = parseAmount(doc.payments_pending ?? null);
-  return pending > 0 ? pending : parseAmount(doc.total);
+  if (doc.payments_pending == null) return parseAmount(doc.total);
+  return parseAmount(doc.payments_pending);
 }
 
 export function buildAgeingReport(docs: DocumentSummary[], asOf: string): string {
   const open = docs.filter(d => outstanding(d) > 0);
   if (open.length === 0) return `Nothing outstanding as at ${asOf}.`;
 
-  const bucketOf = (doc: DocumentSummary) => {
-    const late = daysLate(doc.due_date, asOf);
-    const found = BUCKETS.find(b => late >= b.from && late <= b.to);
-    if (!found)
-      throw new Error(`No age bucket covers ${late} days late; the ranges must be gapless.`);
-    return found;
-  };
+  const bucketOf = (doc: DocumentSummary): BucketLabel => bucketFor(daysLate(doc.due_date, asOf));
 
-  const bucketTotals = BUCKETS.map(bucket => ({
-    label: bucket.label,
-    total: open
-      .filter(d => bucketOf(d).label === bucket.label)
-      .reduce((sum, d) => sum + outstanding(d), 0),
-    count: open.filter(d => bucketOf(d).label === bucket.label).length,
+  const bucketTotals = BUCKET_LABELS.map(label => ({
+    label,
+    total: open.filter(d => bucketOf(d) === label).reduce((sum, d) => sum + outstanding(d), 0),
+    count: open.filter(d => bucketOf(d) === label).length,
   })).filter(b => b.count > 0);
 
   const byContact = new Map<string, { name: string; total: number; docs: DocumentSummary[] }>();
