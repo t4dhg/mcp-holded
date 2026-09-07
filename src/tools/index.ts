@@ -26,6 +26,7 @@ import { registerCalendarTool } from './calendar.js';
 import { registerInboxTool } from './inbox.js';
 import { registerWebhooksTool } from './webhooks.js';
 import { registerRequestTool } from './request.js';
+import { registerResources } from '../resources/index.js';
 
 export const SERVER_VERSION = '2.0.0';
 
@@ -62,6 +63,7 @@ export function createServer(): McpServer {
   registerInboxTool(server);
   registerWebhooksTool(server);
   registerRequestTool(server);
+  registerResources(server);
 
   return server;
 }
