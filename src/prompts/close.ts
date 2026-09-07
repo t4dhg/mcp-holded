@@ -36,12 +36,21 @@ import {
   resolveWindow,
   today,
   toolCall,
+  unpaidRemainder,
   userMessage,
   type PromptDeps,
 } from './shared.js';
 
+/**
+ * A document is overdue when it still has an unpaid remainder past its due
+ * date. This must go through `unpaidRemainder`, not a raw read of
+ * `payments_pending`: that field is absent as often as it is zero, and
+ * `parseAmount(doc.payments_pending ?? null)` used to treat "absent" the
+ * same as "paid in full", which silently dropped a wholly unpaid, badly
+ * overdue invoice from this checklist.
+ */
 function isOverdue(doc: DocumentSummary, asOf: string): boolean {
-  const outstanding = parseAmount(doc.payments_pending ?? null);
+  const outstanding = unpaidRemainder(doc);
   if (outstanding <= 0) return false;
   if (!doc.due_date) return false;
   return doc.due_date.slice(0, 10) < asOf;
@@ -65,10 +74,7 @@ export function buildChecklist(input: {
   }
 
   if (input.overdue.length > 0) {
-    const total = input.overdue.reduce(
-      (sum, d) => sum + parseAmount(d.payments_pending ?? null),
-      0
-    );
+    const total = input.overdue.reduce((sum, d) => sum + unpaidRemainder(d), 0);
     const [firstOverdue] = input.overdue;
     items.push(
       `${items.length + 1}. **${input.overdue.length} invoice${input.overdue.length === 1 ? '' : 's'} past due** as at ${input.asOf}, ${formatAmount(total, firstOverdue?.currency)} outstanding. Run the \`holded_aged_receivables\` prompt for the ageing by contact.`

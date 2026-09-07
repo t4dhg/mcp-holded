@@ -66,7 +66,7 @@ function buildTaxKeySection(items: Tax[]): string {
   if (usable.length === 0) {
     return (
       `No sales-scoped tax keys were found among the ${items.length} configured in this ` +
-      `account; ${items.length === 1 ? 'it is' : 'all of them are'} scoped to purchases. Ask ` +
+      `account; ${items.length === 1 ? 'it is' : 'all of them are'} not scoped to sales. Ask ` +
       'the person which key to use rather than picking one, since none of them is safe for a ' +
       'sales invoice.'
     );
@@ -77,7 +77,7 @@ function buildTaxKeySection(items: Tax[]): string {
 
   return (
     `${lines}\n\n${omitted} tax key${omitted === 1 ? '' : 's'} omitted because ` +
-    `${omitted === 1 ? 'it is' : 'they are'} scoped to purchases. A purchases key must not go ` +
+    `${omitted === 1 ? 'it is' : 'they are'} not scoped to sales. A purchases key must not go ` +
     'on a sales invoice.'
   );
 }

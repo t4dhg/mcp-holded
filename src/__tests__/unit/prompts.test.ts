@@ -4,9 +4,11 @@ import {
   formatAmount,
   previousMonth,
   previousQuarter,
+  remainderWasDerived,
   resolveWindow,
   today,
   toolCall,
+  unpaidRemainder,
   userMessage,
   preRead,
 } from '../../prompts/shared.js';
@@ -41,6 +43,56 @@ describe('prompt helpers', () => {
     expect(parseAmount('0.00')).toBe(0);
     expect(parseAmount(null)).toBe(0);
     expect(parseAmount(undefined)).toBe(0);
+  });
+
+  function docFor(overrides: {
+    total: string;
+    payments_total?: string;
+    payments_pending?: string;
+  }) {
+    return {
+      id: 'x1',
+      document_number: 'F-X',
+      date: '2026-06-01',
+      due_date: '2026-06-30',
+      subtotal: overrides.total,
+      discount: '0,00',
+      tax: '0,00',
+      currency: 'EUR',
+      status: 'pending',
+      lines: [],
+      ...overrides,
+    };
+  }
+
+  it('unpaidRemainder uses the reported figure when present and positive', () => {
+    const doc = docFor({ total: '100,00', payments_total: '50,00', payments_pending: '50,00' });
+    expect(unpaidRemainder(doc as never)).toBe(50);
+    expect(remainderWasDerived(doc as never)).toBe(false);
+  });
+
+  it('unpaidRemainder trusts an explicit zero rather than deriving', () => {
+    const doc = docFor({ total: '100,00', payments_total: '100,00', payments_pending: '0,00' });
+    expect(unpaidRemainder(doc as never)).toBe(0);
+    expect(remainderWasDerived(doc as never)).toBe(false);
+  });
+
+  it('unpaidRemainder derives total less paid when payments_pending is absent and something was paid', () => {
+    const doc = docFor({ total: '100,00', payments_total: '30,00' });
+    expect(unpaidRemainder(doc as never)).toBe(70);
+    expect(remainderWasDerived(doc as never)).toBe(true);
+  });
+
+  it('unpaidRemainder derives the whole total when payments_pending and payments_total are both absent', () => {
+    const doc = docFor({ total: '100,00' });
+    expect(unpaidRemainder(doc as never)).toBe(100);
+    expect(remainderWasDerived(doc as never)).toBe(true);
+  });
+
+  it('unpaidRemainder clamps a derived negative remainder to zero when paid exceeds the total', () => {
+    const doc = docFor({ total: '100,00', payments_total: '150,00' });
+    expect(unpaidRemainder(doc as never)).toBe(0);
+    expect(remainderWasDerived(doc as never)).toBe(true);
   });
 
   it('formats a total to two decimals with a currency', () => {
@@ -211,6 +263,33 @@ describe('holded_aged_receivables', () => {
     const report = buildAgeingReport(paid, '2026-09-07');
     expect(report).toMatch(/Nothing outstanding/i);
     expect(report).not.toMatch(/605\.00/);
+  });
+
+  it('derives the remainder as total less paid, not the whole total, when payments_pending is absent, and discloses it', () => {
+    const partiallyPaidNoFigure = [
+      {
+        id: '5',
+        document_number: 'F-010',
+        contact_id: 'c4',
+        contact_name: 'Delta SL',
+        date: '2026-07-01',
+        due_date: '2026-07-31',
+        subtotal: '500,00',
+        discount: '0,00',
+        total: '605,00',
+        tax: '105,00',
+        currency: 'EUR',
+        status: 'pending',
+        payments_total: '105,00',
+        // payments_pending intentionally absent
+        lines: [],
+      },
+    ];
+    const report = buildAgeingReport(partiallyPaidNoFigure, '2026-09-07');
+    // Total less paid (605.00 - 105.00 = 500.00), not the whole total (605.00).
+    expect(report).toMatch(/500\.00/);
+    expect(report).not.toMatch(/605\.00/);
+    expect(report).toMatch(/derived as total less paid for F-010/i);
   });
 
   it('is registered and returns a read-only report', async () => {
@@ -397,6 +476,70 @@ describe('holded_vat_summary', () => {
     expect(urls[0]).toContain('/taxes');
     expect(urls[1]).toContain('/invoices');
     expect(urls[2]).toContain('/purchases');
+  });
+
+  it('does not report a tax record with no rate as a genuine 0% tax', async () => {
+    const doc = [
+      {
+        id: '10',
+        contact_name: 'Acme SL',
+        date: '2026-04-10',
+        subtotal: '300,00',
+        discount: '0,00',
+        total: '363,00',
+        tax: '63,00',
+        currency: 'EUR',
+        status: 'paid',
+        lines: [
+          { name: 'Rated', price: '100,00', units: '1', taxes: ['key_present'] },
+          { name: 'No rate on record', price: '100,00', units: '1', taxes: ['key_null'] },
+          { name: 'No record at all', price: '100,00', units: '1', taxes: ['key_missing'] },
+        ],
+      },
+    ];
+    stubFetch(
+      {
+        body: {
+          items: [
+            {
+              id: 't1',
+              name: 'IVA 21%',
+              amount: '21',
+              scope: 'sales',
+              key: 'key_present',
+              group: 'iva',
+              type: 'percentage',
+            },
+            {
+              id: 't2',
+              name: 'Rate not set',
+              amount: null,
+              scope: 'sales',
+              key: 'key_null',
+              group: 'iva',
+              type: 'percentage',
+            },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      { body: { items: doc, cursor: null, has_more: false } },
+      { body: { items: [], cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({ name: 'holded_vat_summary', arguments: {} });
+    const body = promptText(result);
+
+    // key_present: a real, known 21% rate and a correct quota.
+    expect(body).toMatch(/key_present.*\| 21 \|.*100\.00.*21\.00/);
+    // key_null: a tax record exists but carries no rate. Must show as unknown
+    // with a zero quota, never as a genuine 0% tax.
+    expect(body).toMatch(/key_null.*\| unknown \|.*100\.00.*0\.00/);
+    // key_missing: no tax record at all for this key. Same unknown treatment.
+    expect(body).toMatch(/key_missing.*\| unknown \|.*100\.00.*0\.00/);
+    expect(body).not.toMatch(/key_null.*\| 0 \|/);
+    expect(body).toMatch(/rate is shown as unknown/i);
   });
 
   it('defaults to the previous calendar quarter and disclaims advice', async () => {
@@ -1072,6 +1215,39 @@ describe('holded_month_end_close', () => {
     expect(body).not.toMatch(/no inbox documents/i);
     expect(body).toMatch(/could not be read/i);
   });
+
+  it('counts a wholly unpaid, past-due invoice as overdue when payments_pending is absent, rather than reporting the period clean', async () => {
+    // Regression guard: a non-zero total, no payments_total, and no
+    // payments_pending at all (not even zero) is exactly the shape that used
+    // to be misread as "paid in full" and vanish from this checklist.
+    const overdueWithNoPendingFigure = {
+      id: 'o2',
+      document_number: 'F-050',
+      date: '2026-06-01',
+      due_date: '2026-07-01',
+      subtotal: '100,00',
+      discount: '0,00',
+      total: '121,00',
+      tax: '21,00',
+      currency: 'EUR',
+      status: 'pending',
+      // payments_total and payments_pending both intentionally absent
+      lines: [],
+    };
+    stubFetch(
+      { body: { items: [overdueWithNoPendingFigure], cursor: null, has_more: false } },
+      { body: { items: [], cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_month_end_close',
+      arguments: { start_date: '2026-06-01', end_date: '2026-08-31' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/1 invoice past due/i);
+    expect(body).toMatch(/121\.00/);
+    expect(body).not.toMatch(/nothing open/i);
+  });
 });
 
 describe('holded_draft_invoice', () => {
@@ -1202,7 +1378,56 @@ describe('holded_draft_invoice', () => {
     expect(body).toContain('s_iva_21');
     expect(body).not.toContain('p_iva_21');
     expect(body).toMatch(/1 tax key omitted/i);
-    expect(body).toMatch(/scoped to purchases/i);
+    expect(body).toMatch(/not scoped to sales/i);
+  });
+
+  it('omits a key with an unrecognised scope and does not misdescribe it as purchases-scoped', async () => {
+    stubFetch(
+      {
+        body: {
+          items: [{ id: 'c1', name: 'Acme SL', type: 'client' }],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      {
+        body: {
+          items: [
+            {
+              id: 't1',
+              name: 'IVA repercutido 21%',
+              amount: '21',
+              scope: 'sales',
+              key: 's_iva_21',
+              group: 'iva',
+              type: 'percentage',
+            },
+            {
+              id: 't2',
+              name: 'Recargo de equivalencia',
+              amount: '5.2',
+              scope: 'surcharge',
+              key: 'r_eq_52',
+              group: 'iva',
+              type: 'percentage',
+            },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_draft_invoice',
+      arguments: { contact: 'Acme', description: 'Licence' },
+    });
+    const body = promptText(result);
+    expect(body).toContain('s_iva_21');
+    expect(body).not.toContain('r_eq_52');
+    expect(body).toMatch(/1 tax key omitted/i);
+    expect(body).toMatch(/not scoped to sales/i);
+    expect(body).not.toMatch(/omitted because it is scoped to purchases/i);
   });
 
   it('offers every key when scope is absent, treating absence as usable rather than filtering it out', async () => {

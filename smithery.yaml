@@ -33,8 +33,12 @@ startCommand:
       env: {
         HOLDED_API_KEY: config.holdedApiKey,
         ...(config.holdedBaseUrl && { HOLDED_BASE_URL: config.holdedBaseUrl }),
-        ...(config.holdedTimeoutMs && { HOLDED_TIMEOUT_MS: String(config.holdedTimeoutMs) }),
-        ...(config.holdedMaxRetries && { HOLDED_MAX_RETRIES: String(config.holdedMaxRetries) }),
+        ...(config.holdedTimeoutMs !== undefined && {
+          HOLDED_TIMEOUT_MS: String(config.holdedTimeoutMs),
+        }),
+        ...(config.holdedMaxRetries !== undefined && {
+          HOLDED_MAX_RETRIES: String(config.holdedMaxRetries),
+        }),
         ...(config.debug && { DEBUG: 'true' })
       }
     })

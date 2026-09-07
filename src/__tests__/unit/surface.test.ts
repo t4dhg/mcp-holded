@@ -11,6 +11,7 @@ const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..
 const toolsDir = path.join(srcDir, 'tools');
 const readmePath = path.resolve(srcDir, '..', 'README.md');
 const llmsPath = path.resolve(srcDir, '..', 'llms.txt');
+const serverJsonPath = path.resolve(srcDir, '..', 'server.json');
 
 export const WORDS = [
   'zero',
@@ -103,6 +104,17 @@ describe('resources and prompts are documented with correct counts', () => {
     expect(prompts.length).toBe(6);
     expect(readFileSync(readmePath, 'utf8')).toMatch(phrase);
     expect(readFileSync(llmsPath, 'utf8')).toMatch(phrase);
+  });
+
+  it('states the resource and prompt counts correctly in server.json', async () => {
+    const client = await connectedClient();
+    const { resources } = await client.listResources();
+    const { prompts } = await client.listPrompts();
+    const resourcePhrase = new RegExp(`${WORDS[resources.length]} resources`, 'i');
+    const promptPhrase = new RegExp(`${WORDS[prompts.length]} prompts`, 'i');
+    const serverJson = JSON.parse(readFileSync(serverJsonPath, 'utf8')) as { description: string };
+    expect(serverJson.description).toMatch(resourcePhrase);
+    expect(serverJson.description).toMatch(promptPhrase);
   });
 
   it('documents every registered resource URI in the README', async () => {

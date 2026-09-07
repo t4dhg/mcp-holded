@@ -7,6 +7,7 @@
  * write. A prompt that wants a write emits the gated call for a person to
  * approve.
  */
+import type { DocumentSummary } from '../schemas/index.js';
 
 /** Injected clock. Tests pass a fixed date; the server uses the wall clock. */
 export interface PromptDeps {
@@ -113,6 +114,36 @@ export function parseAmount(value: string | null | undefined): number {
   }
   const parsed = Number(normalised);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Unpaid remainder on a document.
+ *
+ * `payments_pending` is `NullableAmount.optional()` on `DocumentSummary`
+ * (src/schemas/documents.ts), so it may be ABSENT from a response. This
+ * codebase has repeatedly been bitten by exactly one defect class:
+ * conflating a field that is absent with a field that is zero or false.
+ * Three prompts used to implement this arithmetic separately, and two of
+ * them got the absent case wrong by defaulting it to zero or to the whole
+ * total. Zero understates what is owed and hides a wholly unpaid, badly
+ * overdue invoice from a checklist; the whole total overstates it and
+ * double-counts a part-paid invoice. Neither is safe to guess, so when the
+ * figure is absent it is derived instead: total less what was paid, which is
+ * the same arithmetic Holded's own summary would do, clamped so it never
+ * goes negative (more paid than billed is a data problem elsewhere, not a
+ * negative debt). Every caller that needs "how much is still owed on this
+ * document" must go through this one function rather than reimplementing it,
+ * so the absent case is handled exactly once, correctly, in one place.
+ */
+export function unpaidRemainder(doc: DocumentSummary): number {
+  if (doc.payments_pending != null) return parseAmount(doc.payments_pending);
+  const derived = parseAmount(doc.total) - parseAmount(doc.payments_total ?? null);
+  return derived > 0 ? derived : 0;
+}
+
+/** True when a document's unpaid remainder came from derivation rather than the API. */
+export function remainderWasDerived(doc: DocumentSummary): boolean {
+  return doc.payments_pending == null;
 }
 
 export function formatAmount(value: number, currency?: string): string {

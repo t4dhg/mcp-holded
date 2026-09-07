@@ -120,10 +120,13 @@ export function registerVatPrompt(server: McpServer, deps: PromptDeps = {}): voi
       const rates = new Map<string, number>();
       if (taxes.ok) {
         for (const tax of taxes.value.items) {
-          const record = tax as Record<string, unknown>;
-          const key = typeof record.key === 'string' ? record.key : undefined;
-          if (key !== undefined) {
-            rates.set(key, parseAmount(record.amount as string | null | undefined));
+          // `Tax.amount` is optional and nullable: a tax record that exists but
+          // carries no rate must NOT be registered here. Registering it at 0
+          // would make `rates.has(key)` true, which reports a genuine 0% tax
+          // with a real quota instead of falling through to the `rateKnown:
+          // false` path below, silently understating a Modelo 303 quota.
+          if (tax.amount != null) {
+            rates.set(tax.key, parseAmount(tax.amount));
           }
         }
       }

@@ -16,56 +16,38 @@ import {
   formatAmount,
   parseAmount,
   preRead,
+  remainderWasDerived,
   toolCall,
+  unpaidRemainder,
   userMessage,
   type PromptDeps,
 } from './shared.js';
-
-/**
- * Unpaid remainder.
- *
- * `payments_pending` is optional in the API contract, and an absent value is
- * not the same as zero: defaulting it to zero would report a wholly unpaid
- * invoice as settled in a statement sent to a customer. When it is absent,
- * derive it from the total less what was paid, which is the same arithmetic
- * the statement's own summary does, and never let it go negative.
- */
-function pending(doc: DocumentSummary): number {
-  if (doc.payments_pending != null) return parseAmount(doc.payments_pending);
-  const derived = parseAmount(doc.total) - parseAmount(doc.payments_total ?? null);
-  return derived > 0 ? derived : 0;
-}
-
-/** True when a document's outstanding figure came from derivation rather than the API. */
-function wasDerived(doc: DocumentSummary): boolean {
-  return doc.payments_pending == null;
-}
 
 export function buildStatement(contactName: string, docs: DocumentSummary[]): string {
   if (docs.length === 0) return `${contactName} has no sales documents.`;
 
   const invoiced = docs.reduce((sum, d) => sum + parseAmount(d.total), 0);
   const paid = docs.reduce((sum, d) => sum + parseAmount(d.payments_total ?? null), 0);
-  const outstanding = docs.reduce((sum, d) => sum + pending(d), 0);
+  const outstanding = docs.reduce((sum, d) => sum + unpaidRemainder(d), 0);
   const currency = docs[0]?.currency;
 
   const unpaid = docs
-    .filter(d => pending(d) > 0)
+    .filter(d => unpaidRemainder(d) > 0)
     .sort((a, b) => (a.due_date ?? a.date ?? '').localeCompare(b.due_date ?? b.date ?? ''));
 
   const [oldestUnpaid] = unpaid;
   const oldestLine = oldestUnpaid
-    ? `Oldest unpaid: ${oldestUnpaid.document_number ?? oldestUnpaid.id}, due ${oldestUnpaid.due_date ?? 'unknown'}, ${formatAmount(pending(oldestUnpaid), oldestUnpaid.currency)} outstanding.`
+    ? `Oldest unpaid: ${oldestUnpaid.document_number ?? oldestUnpaid.id}, due ${oldestUnpaid.due_date ?? 'unknown'}, ${formatAmount(unpaidRemainder(oldestUnpaid), oldestUnpaid.currency)} outstanding.`
     : 'Nothing outstanding.';
 
   const rows = [...docs]
     .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
     .map(
       d =>
-        `| ${d.document_number ?? d.id} | ${d.date ?? ''} | ${d.due_date ?? ''} | ${formatAmount(parseAmount(d.total), d.currency)} | ${formatAmount(parseAmount(d.payments_total ?? null), d.currency)} | ${formatAmount(pending(d), d.currency)} | ${d.status} |`
+        `| ${d.document_number ?? d.id} | ${d.date ?? ''} | ${d.due_date ?? ''} | ${formatAmount(parseAmount(d.total), d.currency)} | ${formatAmount(parseAmount(d.payments_total ?? null), d.currency)} | ${formatAmount(unpaidRemainder(d), d.currency)} | ${d.status} |`
     );
 
-  const derivedDocs = docs.filter(wasDerived);
+  const derivedDocs = docs.filter(remainderWasDerived);
   const derivedLine =
     derivedDocs.length > 0
       ? `Outstanding was derived as total less paid for ${derivedDocs.map(d => d.document_number ?? d.id).join(', ')}, because the API did not report a pending figure for them. Check those against Holded before sending this to a customer.`

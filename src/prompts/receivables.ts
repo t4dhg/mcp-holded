@@ -2,7 +2,11 @@
  * holded_aged_receivables: what is owed, by whom, and how late.
  *
  * Outstanding means the unpaid remainder (`payments_pending`), not the
- * document total, so a part-paid invoice contributes only what is left.
+ * document total, so a part-paid invoice contributes only what is left. When
+ * `payments_pending` is absent, the remainder is derived (total less paid,
+ * via `unpaidRemainder` in shared.ts) rather than assumed to be the whole
+ * total, which would double the amount chased on a part-paid invoice with a
+ * missing figure.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
@@ -12,10 +16,11 @@ import {
   PRE_READ_LIMIT,
   READ_ONLY_NOTICE,
   formatAmount,
-  parseAmount,
   preRead,
+  remainderWasDerived,
   toolCall,
   today,
+  unpaidRemainder,
   userMessage,
   type PromptDeps,
 } from './shared.js';
@@ -47,29 +52,15 @@ function daysLate(dueDate: string | null | undefined, asOf: string): number {
   return Math.floor((at - due) / 86_400_000);
 }
 
-/**
- * Unpaid remainder.
- *
- * The fallback to the total applies only when the API OMITS the pending
- * figure. It must not apply when the figure is present and zero: a settled
- * invoice carries `payments_pending: "0,00"`, and treating that as
- * "unknown, assume the whole total" puts a paid customer back on the chase
- * list.
- */
-function outstanding(doc: DocumentSummary): number {
-  if (doc.payments_pending == null) return parseAmount(doc.total);
-  return parseAmount(doc.payments_pending);
-}
-
 export function buildAgeingReport(docs: DocumentSummary[], asOf: string): string {
-  const open = docs.filter(d => outstanding(d) > 0);
+  const open = docs.filter(d => unpaidRemainder(d) > 0);
   if (open.length === 0) return `Nothing outstanding as at ${asOf}.`;
 
   const bucketOf = (doc: DocumentSummary): BucketLabel => bucketFor(daysLate(doc.due_date, asOf));
 
   const bucketTotals = BUCKET_LABELS.map(label => ({
     label,
-    total: open.filter(d => bucketOf(d) === label).reduce((sum, d) => sum + outstanding(d), 0),
+    total: open.filter(d => bucketOf(d) === label).reduce((sum, d) => sum + unpaidRemainder(d), 0),
     count: open.filter(d => bucketOf(d) === label).length,
   })).filter(b => b.count > 0);
 
@@ -81,13 +72,13 @@ export function buildAgeingReport(docs: DocumentSummary[], asOf: string): string
       total: 0,
       docs: [],
     };
-    entry.total += outstanding(doc);
+    entry.total += unpaidRemainder(doc);
     entry.docs.push(doc);
     byContact.set(key, entry);
   }
 
   const contacts = [...byContact.entries()].sort((a, b) => b[1].total - a[1].total);
-  const grand = open.reduce((sum, d) => sum + outstanding(d), 0);
+  const grand = open.reduce((sum, d) => sum + unpaidRemainder(d), 0);
   const currency = open[0]?.currency;
 
   const lines: string[] = [
@@ -111,10 +102,18 @@ export function buildAgeingReport(docs: DocumentSummary[], asOf: string): string
       .map(d => {
         const late = daysLate(d.due_date, asOf);
         const age = late > 0 ? `${late}d late` : 'not due';
-        return `${d.document_number ?? d.id} ${formatAmount(outstanding(d), d.currency)} (${age})`;
+        return `${d.document_number ?? d.id} ${formatAmount(unpaidRemainder(d), d.currency)} (${age})`;
       })
       .join('; ');
     lines.push(`| ${entry.name} (${id}) | ${formatAmount(entry.total, currency)} | ${detail} |`);
+  }
+
+  const derivedDocs = open.filter(remainderWasDerived);
+  if (derivedDocs.length > 0) {
+    lines.push(
+      '',
+      `Outstanding was derived as total less paid for ${derivedDocs.map(d => d.document_number ?? d.id).join(', ')}, because the API did not report a pending figure for them. Check those against Holded before chasing.`
+    );
   }
 
   return lines.join('\n');
