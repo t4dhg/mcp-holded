@@ -18,6 +18,7 @@ import { buildAgeingReport } from '../../prompts/receivables.js';
 import { summariseByTaxKey } from '../../prompts/vat.js';
 import { matchMovements } from '../../prompts/reconciliation.js';
 import { buildStatement } from '../../prompts/statement.js';
+import { buildChecklist } from '../../prompts/close.js';
 
 async function connectedClient(): Promise<Client> {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -926,5 +927,125 @@ describe('holded_contact_statement', () => {
     expect(statement).toMatch(/nothing outstanding/i);
     expect(statement).not.toMatch(/Oldest unpaid/i);
     expect(statement).not.toMatch(/derived as total less paid/i);
+  });
+});
+
+describe('holded_month_end_close', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    setEnv();
+  });
+
+  const draft = {
+    id: 'd1',
+    document_number: null,
+    date: '2026-08-10',
+    subtotal: '100,00',
+    discount: '0,00',
+    total: '121,00',
+    tax: '21,00',
+    currency: 'EUR',
+    status: 'pending',
+    draft: true,
+    lines: [],
+  };
+  const overdue = {
+    id: 'o1',
+    document_number: 'F-009',
+    date: '2026-06-01',
+    due_date: '2026-07-01',
+    subtotal: '100,00',
+    discount: '0,00',
+    total: '121,00',
+    tax: '21,00',
+    currency: 'EUR',
+    status: 'pending',
+    payments_pending: '121,00',
+    lines: [],
+  };
+
+  it('lists each open item with a count', () => {
+    const checklist = buildChecklist({
+      drafts: [draft],
+      overdue: [overdue],
+      inbox: { open: 3, done: 0 },
+      asOf: '2026-08-31',
+    });
+    expect(checklist).toMatch(/1 sales document/);
+    expect(checklist).toMatch(/1 invoice/);
+    expect(checklist).toMatch(/3 inbox/);
+  });
+
+  it('says the period is clean when nothing is open', () => {
+    const checklist = buildChecklist({
+      drafts: [],
+      overdue: [],
+      inbox: { open: 0, done: 0 },
+      asOf: '2026-08-31',
+    });
+    expect(checklist).toMatch(/nothing open/i);
+  });
+
+  it('warns that approving is irreversible', () => {
+    const checklist = buildChecklist({
+      drafts: [draft],
+      overdue: [],
+      inbox: { open: 0, done: 0 },
+      asOf: '2026-08-31',
+    });
+    expect(checklist).toMatch(/Verifactu/);
+  });
+
+  it('does not count an already processed inbox document as open work', () => {
+    const checklist = buildChecklist({
+      drafts: [],
+      overdue: [],
+      inbox: { open: 0, done: 4 },
+      asOf: '2026-08-31',
+    });
+    expect(checklist).toMatch(/nothing open/i);
+    expect(checklist).not.toMatch(/4 inbox/);
+  });
+
+  it('is registered and delegates the bank side to the reconciliation prompt, without counting done inbox documents as open', async () => {
+    stubFetch(
+      { body: { items: [draft, overdue], cursor: null, has_more: false } },
+      {
+        body: {
+          items: [
+            { id: 'i1', status: 'done' },
+            { id: 'i2', status: 'done' },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      }
+    );
+    const client = await connectedClient();
+    const { prompts } = await client.listPrompts();
+    expect(prompts.map(p => p.name)).toContain('holded_month_end_close');
+    const result = await client.getPrompt({
+      name: 'holded_month_end_close',
+      arguments: { start_date: '2026-08-01', end_date: '2026-08-31' },
+    });
+    const body = promptText(result);
+    expect(body).toContain('holded_bank_reconciliation');
+    expect(body).not.toMatch(/\d+ inbox document/);
+  });
+
+  it('reports the inbox as not read, rather than clean, when the inbox read fails', async () => {
+    stubFetch(
+      { body: { items: [draft], cursor: null, has_more: false } },
+      { status: 403, body: { title: 'Access denied', status: 403 } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_month_end_close',
+      arguments: { start_date: '2026-08-01', end_date: '2026-08-31' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/Inbox not read/i);
+    expect(body).not.toMatch(/\d+ inbox document/);
   });
 });
