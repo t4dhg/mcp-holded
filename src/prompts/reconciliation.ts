@@ -26,6 +26,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import * as api from '../api/index.js';
+import { inputs } from '../schemas/index.js';
 import type { BankMovement } from '../schemas/index.js';
 import type { Payment } from '../schemas/index.js';
 import {
@@ -75,20 +76,46 @@ function reconciledDisplay(movement: BankMovement): string {
 }
 
 /**
- * True when a payment carries both fields the reconcile endpoint requires.
- * `ReconcileInput` is a strict object: it accepts exactly `document_id` and
- * `document_type` per document, nothing else, so a call can only be filled
- * in for real when the payment actually has both.
+ * The document types the reconcile endpoint accepts, read straight off
+ * `ReconcileInput` rather than hardcoded, so this list cannot drift from the
+ * schema the tool actually validates against if Holded's contract changes.
+ */
+const RECONCILABLE_DOCUMENT_TYPES: readonly string[] =
+  inputs.ReconcileInput.shape.documents.element.shape.document_type.options;
+
+/**
+ * Why a payment cannot be reconciled by document reference, or null when it
+ * can. `Payment.document_type` is an unconstrained string, while
+ * `ReconcileInput` accepts `document_type` only from a fixed enum, so a
+ * payment can carry both fields non-empty and still be unusable: the two
+ * reasons are distinguished so the person reading the report knows which one
+ * applies.
+ */
+function documentRefProblem(payment: Payment): string | null {
+  if (typeof payment.document_id !== 'string' || payment.document_id.length === 0) {
+    return 'the payment records no document';
+  }
+  if (typeof payment.document_type !== 'string' || payment.document_type.length === 0) {
+    return 'the payment records no document';
+  }
+  if (!RECONCILABLE_DOCUMENT_TYPES.includes(payment.document_type)) {
+    return `the payment's document type \`${payment.document_type}\` is not one the reconcile endpoint accepts`;
+  }
+  return null;
+}
+
+/**
+ * True when a payment carries both fields the reconcile endpoint requires,
+ * `document_id` and `document_type`, and `document_type` is one of the
+ * values `ReconcileInput` actually accepts. `ReconcileInput` is a strict
+ * object: `id` and `amount` are rejected as unrecognised keys, and an
+ * out-of-enum `document_type` is rejected too, so a call can only be filled
+ * in for real when all of this holds.
  */
 function hasDocumentRef(
   payment: Payment
 ): payment is Payment & { document_id: string; document_type: string } {
-  return (
-    typeof payment.document_id === 'string' &&
-    payment.document_id.length > 0 &&
-    typeof payment.document_type === 'string' &&
-    payment.document_type.length > 0
-  );
+  return documentRefProblem(payment) === null;
 }
 
 /**
@@ -130,15 +157,11 @@ function reconcileSection(
 
   if (missing.length > 0) {
     if (ready.length > 0) lines.push('');
-    lines.push(
-      '#### Cannot reconcile by document reference',
-      '',
-      'These matches cannot be reconciled by document reference because the payment records no document:',
-      ''
-    );
+    lines.push('#### Cannot reconcile by document reference', '');
     for (const m of missing) {
+      const problem = documentRefProblem(m.payment) ?? 'the payment records no document';
       lines.push(
-        `- \`${m.movement.id}\` / \`${m.payment.id}\`: look it up with ${toolCall('holded_payments', { action: 'get', id: m.payment.id })}.`
+        `- \`${m.movement.id}\` / \`${m.payment.id}\`: ${problem}. Look it up with ${toolCall('holded_payments', { action: 'get', id: m.payment.id })}.`
       );
     }
   }
