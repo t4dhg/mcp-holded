@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/t4dhg/mcp-holded/main/assets/holded-logo.svg" alt="Holded" height="28">
+</p>
+
 # MCP Holded
 
 > **Model Context Protocol server for [Holded](https://www.holded.com), on the v2 API**
