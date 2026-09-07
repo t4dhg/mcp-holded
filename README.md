@@ -21,7 +21,22 @@ An [MCP](https://modelcontextprotocol.io) server for the **Holded API v2**: cont
 
 Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys use the format `pat_<id>_<secret>` and only authenticate against **v2** (`https://api.holded.com/api/v2`, `Authorization: Bearer`). This server speaks v2 only.
 
-## Install and configure
+## Why this one
+
+- **v2 only, which is the API that still works.** Holded deprecated the classic API (`/api/invoicing/v1`, `key` header). New tokens are `pat_<id>_<secret>` and authenticate only against v2. This server speaks v2 and nothing else.
+- **Thirteen hierarchical tools with an `action` parameter**, not one tool per endpoint, so the tool list stays small in a model's context while covering contacts, sales, purchases, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks.
+- **Seven MCP resources and six MCP prompts.** The resources carry the account's own tax keys, numbering series, payment methods and chart of accounts, plus the API behaviour a schema cannot express. The prompts run the real workflows: aged receivables, VAT summary, bank reconciliation, statements, month-end close.
+- **A confirmation gate on every destructive operation**, with a structural test that keeps the documented list equal to the code. Nothing that deletes, overwrites, approves or emails goes through without `confirm: true`.
+- **Zod validation of every request and every response.** A shape the server has not seen surfaces as a clear schema error rather than a silent success.
+- **Over 200 tests against anonymised real v2 responses**, npm provenance via trusted publishing, and Node 18 or later.
+
+## Quick start
+
+Install nothing. Every client below runs the server through `npx`. Create the token in Holded under **Settings, Developers, API** and use the full `pat_..._...` value.
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS, or `%APPDATA%\Claude\claude_desktop_config.json` on Windows:
 
 ```json
 {
@@ -29,15 +44,51 @@ Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys 
     "holded": {
       "command": "npx",
       "args": ["-y", "@t4dhg/mcp-holded"],
-      "env": {
-        "HOLDED_API_KEY": "pat_xxxxxxxx_xxxxxxxx"
-      }
+      "env": { "HOLDED_API_KEY": "pat_xxxxxxxx_xxxxxxxx" }
     }
   }
 }
 ```
 
-Requires Node.js 18 or later. Create the token in Holded under Settings, Developers, API, and use the full `pat_..._...` value.
+### Claude Code
+
+```bash
+claude mcp add holded --env HOLDED_API_KEY=pat_xxxxxxxx_xxxxxxxx -- npx -y @t4dhg/mcp-holded
+```
+
+### Cursor
+
+Edit `~/.cursor/mcp.json` for every project, or `.cursor/mcp.json` for one:
+
+```json
+{
+  "mcpServers": {
+    "holded": {
+      "command": "npx",
+      "args": ["-y", "@t4dhg/mcp-holded"],
+      "env": { "HOLDED_API_KEY": "pat_xxxxxxxx_xxxxxxxx" }
+    }
+  }
+}
+```
+
+### VS Code
+
+Edit `.vscode/mcp.json`. Note the key is `servers`, not `mcpServers`:
+
+```json
+{
+  "servers": {
+    "holded": {
+      "command": "npx",
+      "args": ["-y", "@t4dhg/mcp-holded"],
+      "env": { "HOLDED_API_KEY": "pat_xxxxxxxx_xxxxxxxx" }
+    }
+  }
+}
+```
+
+Requires Node.js 18 or later.
 
 ### Environment variables
 
@@ -48,6 +99,16 @@ Requires Node.js 18 or later. Create the token in Holded under Settings, Develop
 | `HOLDED_TIMEOUT_MS`  | no       | `30000`                         | Per-request timeout.                                       |
 | `HOLDED_MAX_RETRIES` | no       | `3`                             | Attempts for GET requests. Writes are never retried.       |
 | `DEBUG`              | no       | `false`                         | Log requests to stderr.                                    |
+
+## What people use it for
+
+**Chasing unpaid invoices.** Run the `holded_aged_receivables` prompt. You get every outstanding invoice bucketed by how late it is and grouped by customer, worst first, counting only the unpaid remainder of part-paid invoices. Then ask for a statement for the worst offender with `holded_contact_statement`, in a form you can send them.
+
+**Reconciling a bank month.** Run `holded_bank_reconciliation` for the period. It matches bank movements against recorded payments on amount and date, then shows you the two lists that matter: movements with no payment recorded, and payments the bank has not shown. Reconciling stays behind a confirmation, so nothing is matched in your books until you approve it.
+
+**Preparing the quarterly VAT figures.** Run `holded_vat_summary`. It groups sales and purchases by tax key for the quarter and gives base and quota for each, which is the shape Modelo 303 wants. It is a working aid, not a filing, and it says so.
+
+**Closing a month.** Run `holded_month_end_close`. It tells you what is still in draft, what is past due, and what is sitting in the inbox, each with the exact call that clears it.
 
 ## Tools
 
@@ -166,6 +227,48 @@ Everything below was verified against live v2 responses on 2026-09-06 and is wha
 - **Rate limit** is 100 requests per minute per key. GETs retry on 429 (honouring `Retry-After`), 5xx, timeouts and network errors with exponential backoff and jitter. Writes are sent exactly once because Holded has no idempotency key.
 - **Creates return `{ id }`** with a 201. The server re-reads the record so the tool returns the validated object.
 - **Schemas for CRM leads, projects, tasks, events, bookings, webhooks, payslips, price lists, production orders, sales orders, sales receipts, receipt notes, purchase shipments and remittances** come from the OpenAPI document rather than live records, because the account used for verification has none. They are loose objects, so extra fields pass through, and any mismatch surfaces as a clear schema error rather than a silent success.
+
+## Troubleshooting
+
+### The server exits immediately with a message about the key
+
+`HOLDED_API_KEY` must be a v2 Personal Access Token, in the form `pat_<id>_<secret>`. The server checks this at startup and refuses to run on anything else, rather than failing later on every call. A classic v1 key is 32 hex characters and does not authenticate against v2 at all.
+
+### Everything returns 403 "Access denied"
+
+That is what a bad, revoked or wrong-scope token looks like on v2. Holded returns **403, not 401**, so it reads like a permissions problem when it is usually an authentication one. Regenerate the token in Holded under Settings, Developers, API, and check you copied the whole `pat_..._...` value including both underscores.
+
+### A tool says an action is not available for that document type
+
+Not every verb exists for every type. Purchase refunds have no update, delete, pdf, attachment or approve. Purchases have no pdf or send. Recurring invoices have only update, delete, skip and schedule. Estimates, proformas, sales orders and waybills have no payments. The tool refuses before sending anything and lists what is available. The full matrix is in the `holded://guide/document-types` resource.
+
+### A filter seems to be ignored
+
+It probably is. Holded silently ignores undocumented query parameters: `query`, `q` and `search` on `/contacts` filter nothing and return everything. Use the `search` action, which calls `/contacts/search?name=`, or the exact-match filters `email`, `code`, `phone`, `mobile` and `custom_id`. `page` and `offset` are ignored everywhere; pagination is by `cursor`.
+
+### A resource says it could not be read
+
+The four `holded://reference/...` resources read live configuration, so they need a working token. They return an explanation rather than throwing, so the server keeps working. The three `holded://guide/...` resources are static and always readable.
+
+### Set `DEBUG=true`
+
+Every request is then logged to stderr. Never to stdout, which is the MCP transport.
+
+## FAQ
+
+**Does it work with the old v1 API key?** No, deliberately. v1 is deprecated and new keys do not authenticate against it. Supporting both would mean two code paths where one is a dead end.
+
+**Can it delete things by accident?** Every operation that deletes, overwrites, approves, cancels or emails requires `confirm: true`. Without it the tool sends nothing and tells you what it would have done. The list is generated from the code into `holded://guide/irreversible-operations`, and a test fails if the documented list and the code disagree.
+
+**What happens if a write times out?** It is not retried. Holded has no idempotency key, so a retried write could double-charge or double-issue. Reads retry with backoff; writes are sent exactly once. If a write times out, read the record before trying again.
+
+**Why does approving an invoice need confirmation?** It assigns the legal invoice number. Under Verifactu that is part of an immutable chained record and cannot be undone: a mistake needs a credit note, not an edit.
+
+**Are amounts safe to round-trip?** Yes. Amounts are strings and the server passes them through unchanged, so nothing is rounded. Be aware there are two conventions: documents and salary records use a comma, payments, treasury and accounting use a dot.
+
+**Can I reach an endpoint that has no dedicated action?** Yes, `holded_request` reaches any v2 path with correct auth. Destructive methods and paths are gated there too.
+
+**Is it affiliated with Holded?** No. It is a community project that speaks their public API.
 
 ## Development
 
