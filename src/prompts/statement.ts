@@ -21,8 +21,24 @@ import {
   type PromptDeps,
 } from './shared.js';
 
+/**
+ * Unpaid remainder.
+ *
+ * `payments_pending` is optional in the API contract, and an absent value is
+ * not the same as zero: defaulting it to zero would report a wholly unpaid
+ * invoice as settled in a statement sent to a customer. When it is absent,
+ * derive it from the total less what was paid, which is the same arithmetic
+ * the statement's own summary does, and never let it go negative.
+ */
 function pending(doc: DocumentSummary): number {
-  return parseAmount(doc.payments_pending ?? null);
+  if (doc.payments_pending != null) return parseAmount(doc.payments_pending);
+  const derived = parseAmount(doc.total) - parseAmount(doc.payments_total ?? null);
+  return derived > 0 ? derived : 0;
+}
+
+/** True when a document's outstanding figure came from derivation rather than the API. */
+function wasDerived(doc: DocumentSummary): boolean {
+  return doc.payments_pending == null;
 }
 
 export function buildStatement(contactName: string, docs: DocumentSummary[]): string {
@@ -49,6 +65,12 @@ export function buildStatement(contactName: string, docs: DocumentSummary[]): st
         `| ${d.document_number ?? d.id} | ${d.date ?? ''} | ${d.due_date ?? ''} | ${formatAmount(parseAmount(d.total), d.currency)} | ${formatAmount(parseAmount(d.payments_total ?? null), d.currency)} | ${formatAmount(pending(d), d.currency)} | ${d.status} |`
     );
 
+  const derivedDocs = docs.filter(wasDerived);
+  const derivedLine =
+    derivedDocs.length > 0
+      ? `Outstanding was derived as total less paid for ${derivedDocs.map(d => d.document_number ?? d.id).join(', ')}, because the API did not report a pending figure for them. Check those against Holded before sending this to a customer.`
+      : null;
+
   return [
     `## Statement of account: ${contactName}`,
     '',
@@ -59,6 +81,7 @@ export function buildStatement(contactName: string, docs: DocumentSummary[]): st
     '| Document | Date | Due | Total | Paid | Outstanding | Status |',
     '| --- | --- | --- | --- | --- | --- | --- |',
     ...rows,
+    ...(derivedLine ? ['', derivedLine] : []),
   ].join('\n');
 }
 

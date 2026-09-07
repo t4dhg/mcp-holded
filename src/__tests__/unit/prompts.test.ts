@@ -882,4 +882,49 @@ describe('holded_contact_statement', () => {
     expect(body).toMatch(/matched 2 contacts/i);
     expect(body).toContain('c2');
   });
+
+  it('derives outstanding from total less paid when payments_pending is absent, rather than reporting zero', () => {
+    const docWithoutPending = {
+      id: '3',
+      document_number: 'F-003',
+      date: '2026-06-01',
+      due_date: '2026-06-30',
+      subtotal: '100,00',
+      discount: '0,00',
+      total: '121,00',
+      tax: '21,00',
+      currency: 'EUR',
+      status: 'pending',
+      payments_total: '0,00',
+      // payments_pending intentionally absent
+      lines: [],
+    };
+    const statement = buildStatement('Acme SL', [docWithoutPending]);
+    expect(statement).not.toMatch(/nothing outstanding/i);
+    expect(statement).toMatch(/outstanding 121\.00 EUR/i);
+    expect(statement).toMatch(/Oldest unpaid: F-003/);
+    expect(statement).toMatch(/derived as total less paid for F-003/i);
+  });
+
+  it('does not derive, and reports nothing outstanding, when payments_pending is explicitly zero', () => {
+    const docFullyPaid = {
+      id: '4',
+      document_number: 'F-004',
+      date: '2026-06-01',
+      due_date: '2026-06-30',
+      subtotal: '100,00',
+      discount: '0,00',
+      total: '121,00',
+      tax: '21,00',
+      currency: 'EUR',
+      status: 'paid',
+      payments_total: '121,00',
+      payments_pending: '0,00',
+      lines: [],
+    };
+    const statement = buildStatement('Acme SL', [docFullyPaid]);
+    expect(statement).toMatch(/nothing outstanding/i);
+    expect(statement).not.toMatch(/Oldest unpaid/i);
+    expect(statement).not.toMatch(/derived as total less paid/i);
+  });
 });
