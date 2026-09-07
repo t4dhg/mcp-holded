@@ -8,6 +8,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/t4dhg/mcp-holded/actions/workflows/ci.yml/badge.svg)](https://github.com/t4dhg/mcp-holded/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/t4dhg/mcp-holded/branch/main/graph/badge.svg)](https://codecov.io/gh/t4dhg/mcp-holded)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-brightgreen.svg)](https://nodejs.org/)
 [![npm version](https://img.shields.io/npm/v/@t4dhg/mcp-holded.svg)](https://www.npmjs.com/package/@t4dhg/mcp-holded)
