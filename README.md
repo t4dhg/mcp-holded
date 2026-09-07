@@ -1,4 +1,16 @@
-# @t4dhg/mcp-holded
+# MCP Holded
+
+> **Model Context Protocol server for [Holded](https://www.holded.com), on the v2 API**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/t4dhg/mcp-holded/actions/workflows/ci.yml/badge.svg)](https://github.com/t4dhg/mcp-holded/actions/workflows/ci.yml)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-18%2B-brightgreen.svg)](https://nodejs.org/)
+[![npm version](https://img.shields.io/npm/v/@t4dhg/mcp-holded.svg)](https://www.npmjs.com/package/@t4dhg/mcp-holded)
+[![npm downloads](https://img.shields.io/npm/dm/@t4dhg/mcp-holded.svg)](https://www.npmjs.com/package/@t4dhg/mcp-holded)
+[![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io/)
+
+_A community project. Not affiliated with, endorsed by, or supported by Holded. "Holded" and the Holded logo are trademarks of their owner, used here to identify the API this server speaks to._
 
 An [MCP](https://modelcontextprotocol.io) server for the **Holded API v2**: contacts, sales and purchase documents, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks. Thirteen hierarchical tools with an `action` parameter, Zod validation of every request and response, retries on reads, and a confirmation gate on every destructive operation.
 
