@@ -30,6 +30,30 @@ Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys 
 - **Zod validation of every request and every response.** A shape the server has not seen surfaces as a clear schema error rather than a silent success.
 - **Over 200 tests against anonymised real v2 responses**, npm provenance via trusted publishing, and Node 18 or later.
 
+## How it compares
+
+Four MCP servers for Holded exist on npm. This compares the published code of each, not their descriptions, as at **2026-09-07**: `@t4dhg/mcp-holded` 2.1.0, `@nubiia/mcp-holded` 2.0.2, `@energio/holded-mcp` 1.5.1 and `holded-mcp` 1.0.0. It is a snapshot and will age; check the current versions yourself before relying on it.
+
+|                              | `@t4dhg/mcp-holded`                                  | `@nubiia/mcp-holded`                                                             | `@energio/holded-mcp`                                       | `holded-mcp`                                                |
+| ---------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| API version                  | **v2**                                               | **v2**                                                                           | v1 (deprecated)                                             | v1 (deprecated)                                             |
+| Auth                         | Bearer `pat_`                                        | Bearer `pat_`                                                                    | `key` header                                                | `key` header                                                |
+| Domains covered              | 13                                                   | 17 tool-module files (no calendar, bookings, inbox, webhooks or CRM)             | 5 API sections (accounting, CRM, invoicing, projects, team) | 5 API sections (accounting, CRM, invoicing, projects, team) |
+| Tool shape                   | 13 hierarchical, `action` parameter (15 tools total) | 119 flat tools, one per operation                                                | 139 flat tools, one per operation                           | 136 flat tools, one per operation                           |
+| MCP resources                | **7**                                                | 0                                                                                | 0                                                           | 0                                                           |
+| MCP prompts                  | **6**                                                | 0                                                                                | 0                                                           | 0                                                           |
+| Destructive operations gated | Every one, structurally tested                       | No confirmation gate; `destructiveHint` annotation and per-tool rate limits only | No confirmation gate; `destructiveHint` annotation only     | No confirmation gate; `destructiveHint` annotation only     |
+| Response validation          | Zod, requests and responses                          | Zod, requests only                                                               | Zod, requests only                                          | Zod, requests only                                          |
+| Minimum Node                 | **18**                                               | 22.14                                                                            | 20                                                          | **18**                                                      |
+| Tests                        | 223                                                  | 389, across 23 files, shipped in the package and passing                         | None shipped                                                | None shipped                                                |
+| npm provenance               | Yes                                                  | Yes                                                                              | No                                                          | No                                                          |
+| Licence                      | MIT                                                  | MIT                                                                              | MIT                                                         | MIT                                                         |
+| Last publish                 | 2026-09-07                                           | 2026-07-07                                                                       | 2026-07-01                                                  | 2026-02-25                                                  |
+
+<!-- Re-verify every cell against the rivals' published tarballs before editing this section. Do not edit a single cell without re-running the whole pass; a half-updated table is worse than a stale one. -->
+
+Where this differs most: the v1 servers are on an API Holded has deprecated, and new `pat_` tokens do not authenticate against it at all, so they cannot work with a newly issued key. Against `@nubiia/mcp-holded`, which is current, the differences are breadth (this server covers calendar and bookings, inbox, webhooks, and CRM leads and funnels, none of which appear in nubiia's tool list), the resource and prompt surface, the hierarchical tool shape, and a gated raw-request escape hatch. Nubiia's own Node floor is 22.14, genuinely higher than the 18 this server and `holded-mcp` both support.
+
 ## Quick start
 
 Install nothing. Every client below runs the server through `npx`. Create the token in Holded under **Settings, Developers, API** and use the full `pat_..._...` value.
