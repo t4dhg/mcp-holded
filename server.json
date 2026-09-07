@@ -1,0 +1,56 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.t4dhg/mcp-holded",
+  "title": "MCP Holded",
+  "description": "MCP server for the Holded API v2: contacts, invoicing, purchases, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks, with seven resources, six prompts and a confirmation gate on every destructive operation.",
+  "version": "2.1.0",
+  "repository": {
+    "url": "https://github.com/t4dhg/mcp-holded",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/t4dhg/mcp-holded#readme",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@t4dhg/mcp-holded",
+      "version": "2.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "HOLDED_API_KEY",
+          "description": "Holded v2 Personal Access Token (pat_<id>_<secret>), created under Settings, Developers, API. A v1 key is rejected at startup.",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "HOLDED_BASE_URL",
+          "description": "Override the API base URL (default: https://api.holded.com/api/v2)",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "HOLDED_TIMEOUT_MS",
+          "description": "Per-request timeout in milliseconds (default: 30000)",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "HOLDED_MAX_RETRIES",
+          "description": "Retry attempts for GET requests; writes are never retried (default: 3)",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "DEBUG",
+          "description": "Log requests to stderr (default: false)",
+          "isRequired": false,
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
