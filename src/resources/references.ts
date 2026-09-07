@@ -89,13 +89,13 @@ async function buildTaxes(): Promise<string> {
   const page = await api.listTaxes();
   const rows = page.items.map(tax => {
     const t = tax as Record<string, unknown>;
-    return [cell(t.key ?? t.id), cell(t.name), cell(t.percentage ?? t.percent), cell(t.type)];
+    return [cell(t.key ?? t.id), cell(t.name), cell(t.amount), cell(t.type), cell(t.scope)];
   });
   return `# Taxes configured in this account
 
-Use the **key** verbatim in a document line's \`taxes\` array, for example \`"taxes": ["s_iva_21"]\`. The key is not the id and not the percentage; a line built from a guessed key is rejected or silently mis-taxed.
+Use the **key** verbatim in a document line's \`taxes\` array, for example \`"taxes": ["s_iva_21"]\`. The key is not the id and not the rate; a line built from a guessed key is rejected or silently mis-taxed. \`scope\` says whether the key applies to sales or purchases, which determines which one a caller should pick.
 
-${markdownTable(['Key', 'Name', 'Percentage', 'Type'], rows)}
+${markdownTable(['Key', 'Name', 'Rate', 'Type', 'Scope'], rows)}
 
 Read by \`holded_accounting({ action: 'list_taxes' })\`. Country-specific keys: \`holded_accounting({ action: 'tax_keys', country: 'ES' })\`.
 `;
@@ -107,15 +107,15 @@ async function buildNumberingSeries(): Promise<string> {
     const page = await api.listNumberingSeries(type);
     const rows = page.items.map(series => {
       const s = series as Record<string, unknown>;
-      return [cell(s.id), cell(s.name), cell(s.prefix), cell(s.next_number ?? s.nextNumber)];
+      return [cell(s.id), cell(s.name), cell(s.format), cell(s.last), cell(s.verifactu_excluded)];
     });
     sections.push(
-      `## \`${type}\`\n\n${markdownTable(['Id', 'Name', 'Prefix', 'Next number'], rows)}`
+      `## \`${type}\`\n\n${markdownTable(['Id', 'Name', 'Format', 'Last number', 'Verifactu excluded'], rows)}`
     );
   }
   return `# Numbering series
 
-A document is numbered from a series. The series type names differ from the document type names: a credit note uses \`creditnote\`, a sales order uses \`salesorder\`.
+A document is numbered from a series. The series type names differ from the document type names: a credit note uses \`creditnote\`, a sales order uses \`salesorder\`. \`last\` is the last number issued from the series, and \`verifactu_excluded\` matters because approving an invoice is an irreversible Verifactu step; check whether the series a caller is about to use is in or out of that regime.
 
 ${sections.join('\n\n')}
 
@@ -180,7 +180,8 @@ const REFERENCES: {
     uri: NUMBERING_SERIES_URI,
     title: 'Numbering series',
     description:
-      'The numbering series configured for each document type, with prefixes and next numbers.',
+      'The numbering series configured for each document type, with formats and the last number ' +
+      'issued.',
     fallbackTool: "holded_accounting({ action: 'list_numbering_series' })",
     build: buildNumberingSeries,
   },

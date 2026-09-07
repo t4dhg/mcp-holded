@@ -118,7 +118,7 @@ describe('live reference resources', () => {
 
   it('renders tax keys so a model can copy them into an invoice line', async () => {
     stubFetch({
-      body: { items: [{ id: '1', name: 'IVA 21%', percentage: '21', key: 's_iva_21' }] },
+      body: { items: [{ id: '1', name: 'IVA 21%', amount: '21', key: 's_iva_21' }] },
     });
     const client = await connectedClient();
     const body = textOf(await client.readResource({ uri: 'holded://reference/taxes' }));
@@ -150,5 +150,17 @@ describe('live reference resources', () => {
     const client = await connectedClient();
     await client.readResource({ uri: 'holded://reference/numbering-series' });
     expect(fetchMock).toHaveBeenCalledTimes(8);
+  });
+
+  it('does not cache a failed read, so the next read retries', async () => {
+    stubFetch(
+      { status: 403, body: { title: 'Access denied', status: 403 } },
+      { body: { items: [{ id: '1', name: 'IVA 21%', amount: '21', key: 's_iva_21' }] } }
+    );
+    const client = await connectedClient();
+    const first = textOf(await client.readResource({ uri: 'holded://reference/taxes' }));
+    expect(first).toMatch(/could not be read/i);
+    const second = textOf(await client.readResource({ uri: 'holded://reference/taxes' }));
+    expect(second).toContain('s_iva_21');
   });
 });
