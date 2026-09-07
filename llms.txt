@@ -1,6 +1,6 @@
 # @t4dhg/mcp-holded
 
-> MCP server for the Holded API v2 (Spanish ERP: invoicing, accounting, treasury, CRM, projects, team). Fourteen hierarchical tools with an `action` parameter, validated inputs and outputs, confirmation gates on destructive operations.
+> MCP server for the Holded API v2 (Spanish ERP: invoicing, accounting, treasury, CRM, projects, team). Thirteen hierarchical tools with an `action` parameter, validated inputs and outputs, confirmation gates on destructive operations.
 
 ## Configuration
 

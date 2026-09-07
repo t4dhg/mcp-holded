@@ -25,7 +25,7 @@ describe('tools end to end over an in-memory transport', () => {
     setEnv();
   });
 
-  it('registers 16 tools with the expected names', async () => {
+  it('registers 15 tools with the expected names', async () => {
     const client = await connectedClient();
     const { tools } = await client.listTools();
     const names = tools.map(t => t.name).sort();
