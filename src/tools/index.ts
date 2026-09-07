@@ -27,6 +27,7 @@ import { registerInboxTool } from './inbox.js';
 import { registerWebhooksTool } from './webhooks.js';
 import { registerRequestTool } from './request.js';
 import { registerResources } from '../resources/index.js';
+import { registerPrompts } from '../prompts/index.js';
 
 export const SERVER_VERSION = '2.0.0';
 
@@ -64,6 +65,7 @@ export function createServer(): McpServer {
   registerWebhooksTool(server);
   registerRequestTool(server);
   registerResources(server);
+  registerPrompts(server);
 
   return server;
 }
