@@ -11,6 +11,7 @@ import { registerVatPrompt } from './vat.js';
 import { registerReconciliationPrompt } from './reconciliation.js';
 import { registerStatementPrompt } from './statement.js';
 import { registerClosePrompt } from './close.js';
+import { registerDraftInvoicePrompt } from './draft-invoice.js';
 
 export function registerPrompts(server: McpServer, deps: PromptDeps = {}): void {
   registerReceivablesPrompt(server, deps);
@@ -18,4 +19,5 @@ export function registerPrompts(server: McpServer, deps: PromptDeps = {}): void 
   registerReconciliationPrompt(server, deps);
   registerStatementPrompt(server, deps);
   registerClosePrompt(server, deps);
+  registerDraftInvoicePrompt(server, deps);
 }

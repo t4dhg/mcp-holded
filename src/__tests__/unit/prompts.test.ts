@@ -1073,3 +1073,87 @@ describe('holded_month_end_close', () => {
     expect(body).toMatch(/could not be read/i);
   });
 });
+
+describe('holded_draft_invoice', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    setEnv();
+  });
+
+  it('offers the real tax keys and a create payload, and stops before approve', async () => {
+    stubFetch(
+      {
+        body: {
+          items: [{ id: 'c1', name: 'Acme SL', type: 'client' }],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      {
+        body: {
+          items: [
+            {
+              id: 't1',
+              name: 'IVA 21%',
+              amount: '21',
+              scope: 'sales',
+              key: 's_iva_21',
+              group: 'iva',
+              type: 'percentage',
+            },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_draft_invoice',
+      arguments: { contact: 'Acme', description: 'Annual licence, 1000 EUR', date: '2026-09-07' },
+    });
+    const body = promptText(result);
+    expect(body).toContain('s_iva_21');
+    expect(body).toContain("action: 'create'");
+    expect(body).toMatch(/do not (call|make).*approve/i);
+    expect(body).toMatch(/Verifactu/);
+    expect(body).not.toMatch(/numbering_series_id/);
+  });
+
+  it('will not proceed when the contact name is ambiguous', async () => {
+    stubFetch({
+      body: {
+        items: [
+          { id: 'c1', name: 'Acme SL', type: 'client' },
+          { id: 'c2', name: 'Acme Holdings SL', type: 'client' },
+        ],
+        cursor: null,
+        has_more: false,
+      },
+    });
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_draft_invoice',
+      arguments: { contact: 'Acme', description: 'Licence' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/matched 2 contacts/i);
+    expect(body).not.toContain("action: 'create'");
+  });
+
+  it('will not invent a contact id when nothing matches', async () => {
+    stubFetch({
+      body: { items: [], cursor: null, has_more: false },
+    });
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_draft_invoice',
+      arguments: { contact: 'Nobody Ltd', description: 'Licence' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/no contact matched/i);
+    expect(body).toMatch(/do not invent a contact id/i);
+    expect(body).not.toContain("holded_sales({ action: 'create'");
+  });
+});
