@@ -15,10 +15,24 @@
  * Tax keys come from the account's own /taxes records and are used verbatim.
  * A Holded tax key does not encode its rate, so the rate shown next to each
  * key is read from the record, never invented.
+ *
+ * Only keys usable on a sales document are offered. `Tax.scope` distinguishes
+ * 'sales' from 'purchases'; a purchases key rendered here with nothing to
+ * mark it would be indistinguishable from a sales key at the same rate (real
+ * accounts pair keys like `s_iva_21` and `p_iva_21` at identical
+ * percentages), and if it survived to `approve` it would be exactly the
+ * Verifactu-irreversible mistake this prompt exists to prevent. A key whose
+ * scope is absent is kept rather than dropped: `Tax.scope` is optional and
+ * nullable, so absence means unknown, not "not sales", the same
+ * absent-versus-zero distinction applied elsewhere in these prompts. Any key
+ * hidden this way is disclosed by count, never silently dropped, and if
+ * filtering leaves nothing usable the prompt says so and refuses to fall
+ * back to the purchases-only keys.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import * as api from '../api/index.js';
+import type { Tax } from '../schemas/index.js';
 import {
   READ_ONLY_NOTICE,
   preRead,
@@ -27,6 +41,46 @@ import {
   userMessage,
   type PromptDeps,
 } from './shared.js';
+
+/** True for a tax key usable on a sales document: scoped to sales, or with no recorded scope. */
+function isSalesUsable(tax: Tax): boolean {
+  return tax.scope === 'sales' || tax.scope == null;
+}
+
+function taxLine(t: Tax): string {
+  const rate = t.amount != null ? ` ${t.amount}%` : '';
+  const scope = t.scope != null ? ` (${t.scope})` : '';
+  return `- \`${t.key}\` ${t.name}${rate}${scope}`;
+}
+
+/**
+ * Render the tax-key section: only sales-usable keys, always disclosing
+ * anything hidden, and never falling back to a purchases-only key.
+ */
+function buildTaxKeySection(items: Tax[]): string {
+  if (items.length === 0) return 'No tax keys are configured in this account.';
+
+  const usable = items.filter(isSalesUsable);
+  const omitted = items.length - usable.length;
+
+  if (usable.length === 0) {
+    return (
+      `No sales-scoped tax keys were found among the ${items.length} configured in this ` +
+      `account; ${items.length === 1 ? 'it is' : 'all of them are'} scoped to purchases. Ask ` +
+      'the person which key to use rather than picking one, since none of them is safe for a ' +
+      'sales invoice.'
+    );
+  }
+
+  const lines = usable.map(taxLine).join('\n');
+  if (omitted === 0) return lines;
+
+  return (
+    `${lines}\n\n${omitted} tax key${omitted === 1 ? '' : 's'} omitted because ` +
+    `${omitted === 1 ? 'it is' : 'they are'} scoped to purchases. A purchases key must not go ` +
+    'on a sales invoice.'
+  );
+}
 
 export function registerDraftInvoicePrompt(server: McpServer, deps: PromptDeps = {}): void {
   server.registerPrompt(
@@ -99,11 +153,7 @@ export function registerDraftInvoicePrompt(server: McpServer, deps: PromptDeps =
       }
 
       const taxes = await preRead('the tax keys', () => api.listTaxes());
-      const taxLines = taxes.ok
-        ? taxes.value.items
-            .map(t => `- \`${t.key}\` ${t.name}${t.amount != null ? ` ${t.amount}%` : ''}`)
-            .join('\n')
-        : taxes.message;
+      const taxLines = taxes.ok ? buildTaxKeySection(taxes.value.items) : taxes.message;
 
       return userMessage([
         `Draft a sales invoice for ${contactName} (${contactId}), dated ${invoiceDate}.`,

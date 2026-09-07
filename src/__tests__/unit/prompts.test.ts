@@ -1156,4 +1156,126 @@ describe('holded_draft_invoice', () => {
     expect(body).toMatch(/do not invent a contact id/i);
     expect(body).not.toContain("holded_sales({ action: 'create'");
   });
+
+  it('offers a sales-scoped key, omits a purchases-scoped one, and discloses the omission', async () => {
+    stubFetch(
+      {
+        body: {
+          items: [{ id: 'c1', name: 'Acme SL', type: 'client' }],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      {
+        body: {
+          items: [
+            {
+              id: 't1',
+              name: 'IVA repercutido 21%',
+              amount: '21',
+              scope: 'sales',
+              key: 's_iva_21',
+              group: 'iva',
+              type: 'percentage',
+            },
+            {
+              id: 't2',
+              name: 'IVA soportado 21%',
+              amount: '21',
+              scope: 'purchases',
+              key: 'p_iva_21',
+              group: 'iva',
+              type: 'percentage',
+            },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_draft_invoice',
+      arguments: { contact: 'Acme', description: 'Licence' },
+    });
+    const body = promptText(result);
+    expect(body).toContain('s_iva_21');
+    expect(body).not.toContain('p_iva_21');
+    expect(body).toMatch(/1 tax key omitted/i);
+    expect(body).toMatch(/scoped to purchases/i);
+  });
+
+  it('offers every key when scope is absent, treating absence as usable rather than filtering it out', async () => {
+    stubFetch(
+      {
+        body: {
+          items: [{ id: 'c1', name: 'Acme SL', type: 'client' }],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      {
+        body: {
+          items: [
+            { id: 't1', name: 'IVA 21%', amount: '21', scope: null, key: 's_iva_21' },
+            { id: 't2', name: 'IVA 10%', amount: '10', scope: null, key: 's_iva_10' },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_draft_invoice',
+      arguments: { contact: 'Acme', description: 'Licence' },
+    });
+    const body = promptText(result);
+    expect(body).toContain('s_iva_21');
+    expect(body).toContain('s_iva_10');
+    expect(body).not.toMatch(/omitted/i);
+  });
+
+  it('offers nothing and says so when every configured key is purchases-scoped, without presenting them as usable', async () => {
+    stubFetch(
+      {
+        body: {
+          items: [{ id: 'c1', name: 'Acme SL', type: 'client' }],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      {
+        body: {
+          items: [
+            {
+              id: 't1',
+              name: 'IVA soportado 21%',
+              amount: '21',
+              scope: 'purchases',
+              key: 'p_iva_21',
+            },
+            {
+              id: 't2',
+              name: 'IVA soportado 10%',
+              amount: '10',
+              scope: 'purchases',
+              key: 'p_iva_10',
+            },
+          ],
+          cursor: null,
+          has_more: false,
+        },
+      }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_draft_invoice',
+      arguments: { contact: 'Acme', description: 'Licence' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/no sales-scoped tax keys were found/i);
+    expect(body).not.toContain('- `p_iva_21`');
+    expect(body).not.toContain('- `p_iva_10`');
+  });
 });
