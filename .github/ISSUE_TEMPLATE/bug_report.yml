@@ -1,0 +1,46 @@
+name: Bug report
+description: Something behaves differently from what the README says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Never paste your API key, a `pat_` token, or an unredacted response containing customer data.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you called, and what came back. Redact ids and amounts if they are sensitive.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Package version
+      placeholder: 2.1.0
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      placeholder: v20.11.0
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      placeholder: Claude Desktop, Claude Code, Cursor, VS Code
+  - type: textarea
+    id: debug
+    attributes:
+      label: Debug output
+      description: Output with `DEBUG=true`, with any token redacted.
+      render: shell

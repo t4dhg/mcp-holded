@@ -1,0 +1,22 @@
+name: Feature request
+description: An endpoint, action, resource or prompt that is missing
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The task, not the implementation. It may already be possible with `holded_request`.
+    validations:
+      required: true
+  - type: input
+    id: endpoint
+    attributes:
+      label: Holded v2 endpoint, if you know it
+      placeholder: GET /api/v2/...
+  - type: textarea
+    id: response
+    attributes:
+      label: A real response from that endpoint, anonymised
+      description: This server builds schemas from real responses, so a sample makes the change much faster.
+      render: json
