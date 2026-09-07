@@ -17,6 +17,7 @@ import { setEnv, stubFetch } from './helpers.js';
 import { buildAgeingReport } from '../../prompts/receivables.js';
 import { summariseByTaxKey } from '../../prompts/vat.js';
 import { matchMovements } from '../../prompts/reconciliation.js';
+import { buildStatement } from '../../prompts/statement.js';
 
 async function connectedClient(): Promise<Client> {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -782,5 +783,103 @@ describe('holded_bank_reconciliation', () => {
     expect(body).toMatch(/nothing to reconcile/i);
     expect(body).not.toContain('#### Cannot reconcile by document reference');
     expect(body).not.toContain("action: 'reconcile'");
+  });
+});
+
+describe('holded_contact_statement', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+    setEnv();
+  });
+
+  const docs = [
+    {
+      id: '1',
+      document_number: 'F-001',
+      date: '2026-05-01',
+      due_date: '2026-05-31',
+      subtotal: '1000,00',
+      discount: '0,00',
+      total: '1210,00',
+      tax: '210,00',
+      currency: 'EUR',
+      status: 'paid',
+      payments_total: '1210,00',
+      payments_pending: '0,00',
+      lines: [],
+    },
+    {
+      id: '2',
+      document_number: 'F-002',
+      date: '2026-08-01',
+      due_date: '2026-08-31',
+      subtotal: '500,00',
+      discount: '0,00',
+      total: '605,00',
+      tax: '105,00',
+      currency: 'EUR',
+      status: 'pending',
+      payments_total: '105,00',
+      payments_pending: '500,00',
+      lines: [],
+    },
+  ];
+
+  it('totals invoiced, paid and outstanding', () => {
+    const statement = buildStatement('Acme SL', docs);
+    expect(statement).toMatch(/1815\.00/); // invoiced
+    expect(statement).toMatch(/1315\.00/); // paid
+    expect(statement).toMatch(/500\.00/); // outstanding
+  });
+
+  it('names the oldest unpaid document', () => {
+    const statement = buildStatement('Acme SL', docs);
+    expect(statement).toMatch(/Oldest unpaid/i);
+    expect(statement).toContain('F-002');
+  });
+
+  it('handles a contact with no documents', () => {
+    expect(buildStatement('Acme SL', [])).toMatch(/no sales documents/i);
+  });
+
+  it('resolves a contact by name when no id is given', async () => {
+    stubFetch(
+      {
+        body: {
+          items: [{ id: 'c1', name: 'Acme SL', type: 'client' }],
+          cursor: null,
+          has_more: false,
+        },
+      },
+      { body: { items: docs, cursor: null, has_more: false } }
+    );
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_contact_statement',
+      arguments: { name: 'Acme' },
+    });
+    expect(promptText(result)).toContain('Acme SL');
+  });
+
+  it('will not guess when a name matches several contacts', async () => {
+    stubFetch({
+      body: {
+        items: [
+          { id: 'c1', name: 'Acme SL', type: 'client' },
+          { id: 'c2', name: 'Acme Holdings SL', type: 'client' },
+        ],
+        cursor: null,
+        has_more: false,
+      },
+    });
+    const client = await connectedClient();
+    const result = await client.getPrompt({
+      name: 'holded_contact_statement',
+      arguments: { name: 'Acme' },
+    });
+    const body = promptText(result);
+    expect(body).toMatch(/matched 2 contacts/i);
+    expect(body).toContain('c2');
   });
 });

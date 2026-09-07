@@ -9,9 +9,11 @@ import type { PromptDeps } from './shared.js';
 import { registerReceivablesPrompt } from './receivables.js';
 import { registerVatPrompt } from './vat.js';
 import { registerReconciliationPrompt } from './reconciliation.js';
+import { registerStatementPrompt } from './statement.js';
 
 export function registerPrompts(server: McpServer, deps: PromptDeps = {}): void {
   registerReceivablesPrompt(server, deps);
   registerVatPrompt(server, deps);
   registerReconciliationPrompt(server, deps);
+  registerStatementPrompt(server, deps);
 }
