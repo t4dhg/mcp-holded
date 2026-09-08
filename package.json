@@ -34,6 +34,7 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.json\" \"*.json\" \"*.md\"",
     "typecheck": "tsc --noEmit",
     "smoke": "node scripts/smoke-test.mjs",
+    "scan": "node scripts/preflight-scan.mjs",
     "prepublishOnly": "npm run test && npm run build",
     "prepare": "husky"
   },
