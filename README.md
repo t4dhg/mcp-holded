@@ -32,7 +32,7 @@ Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys 
 
 ## How it compares
 
-Four MCP servers for Holded exist on npm. This compares the published code of each, not their descriptions, as at **2026-09-07**: `@t4dhg/mcp-holded` 2.1.0, `@nubiia/mcp-holded` 2.0.2, `@energio/holded-mcp` 1.5.1 and `holded-mcp` 1.0.0. It is a snapshot and will age; check the current versions yourself before relying on it.
+Four MCP servers for Holded exist on npm. This compares the published code of each, not their descriptions, as at **2026-09-08**: `@t4dhg/mcp-holded` 2.1.0, `@nubiia/mcp-holded` 2.0.2, `@energio/holded-mcp` 1.5.1 and `holded-mcp` 1.0.0. It is a snapshot and will age; check the current versions yourself before relying on it.
 
 |                              | `@t4dhg/mcp-holded`                                  | `@nubiia/mcp-holded`                                                             | `@energio/holded-mcp`                                       | `holded-mcp`                                                |
 | ---------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
@@ -48,7 +48,7 @@ Four MCP servers for Holded exist on npm. This compares the published code of ea
 | Tests                        | 223                                                  | 389, across 23 files, shipped in the package and passing                         | None shipped                                                | None shipped                                                |
 | npm provenance               | Yes                                                  | Yes                                                                              | No                                                          | No                                                          |
 | Licence                      | MIT                                                  | MIT                                                                              | MIT                                                         | MIT                                                         |
-| Last publish                 | 2026-09-07                                           | 2026-07-07                                                                       | 2026-07-01                                                  | 2026-02-25                                                  |
+| Last publish                 | 2026-09-08                                           | 2026-07-07                                                                       | 2026-07-01                                                  | 2026-02-25                                                  |
 
 <!-- Re-verify every cell against the rivals' published tarballs before editing this section. Do not edit a single cell without re-running the whole pass; a half-updated table is worse than a stale one. -->
 

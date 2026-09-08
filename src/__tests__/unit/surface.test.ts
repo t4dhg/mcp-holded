@@ -136,4 +136,18 @@ describe('resources and prompts are documented with correct counts', () => {
       []
     );
   });
+
+  it('reports the same version in package.json, SERVER_VERSION and server.json', async () => {
+    const pkg = JSON.parse(readFileSync(path.resolve(srcDir, '..', 'package.json'), 'utf8')) as {
+      version: string;
+    };
+    const srv = JSON.parse(readFileSync(path.resolve(srcDir, '..', 'server.json'), 'utf8')) as {
+      version: string;
+      packages: { version: string }[];
+    };
+    const { SERVER_VERSION } = await import('../../tools/index.js');
+    expect(SERVER_VERSION).toBe(pkg.version);
+    expect(srv.version).toBe(pkg.version);
+    expect(srv.packages[0]!.version).toBe(pkg.version);
+  });
 });

@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-09-08
+
+### Added
+
+- **Seven MCP resources.** Three guides and four live references. `holded://guide/api-behaviour` carries the verified v2 behaviour a tool schema cannot express: Bearer auth and the 403-not-401 response to a bad key, cursor pagination, the two decimal conventions, `DD/MM/YYYY` ledger dates, silently ignored query parameters, and why writes are never retried. `holded://guide/document-types` carries the per-type verb matrix. `holded://guide/irreversible-operations` is generated from the write-safety policy table so it cannot drift, and explains why approving a sales document is irreversible under Verifactu. `holded://reference/taxes`, `holded://reference/numbering-series`, `holded://reference/payment-methods` and `holded://reference/accounting-accounts` read the account's own configuration, are memoised for fifteen minutes, and never throw: a failed read returns an explanation and the tool to fall back to.
+- **Six MCP prompts**, all read-only: `holded_aged_receivables`, `holded_vat_summary`, `holded_bank_reconciliation`, `holded_contact_statement`, `holded_month_end_close` and `holded_draft_invoice`. Each pre-reads the facts and returns a report plus the exact tool calls to act on it. `holded_draft_invoice` assembles a create payload for review and stops; it never proposes `approve` in the same turn as `create`, because `create` makes an editable draft while `approve` assigns the legal number and cannot be undone under Verifactu.
+- A shared `unpaidRemainder` helper in `src/prompts/shared.ts` so every prompt answers "how much is still owed" the same way, through one implementation.
+- Structural tests asserting that the tool, resource and prompt counts stated in `README.md` and `llms.txt` equal the counts registered on the server, and that every resource URI and prompt name is documented.
+- Coverage and test-result uploads to Codecov, and a badge row on the README.
+- `server.json`, `smithery.yaml` and `glama.json`, and a manual workflow that publishes to the official MCP registry once an npm release is live.
+- Issue and pull request templates.
+- npm keywords expanded from eleven to twenty-six, adding Spanish search terms and client names.
+- A dated comparison table against the other Holded MCP servers on npm, and a rebuilt npm page with a header, badges and a why-this-one section.
+
+### Fixed
+
+- `unpaidRemainder` now derives an absent `payments_pending` as total less paid, instead of treating the absence as zero. A wholly unpaid invoice whose pending figure the API omitted could previously be reported as settled; the aged receivables, VAT summary, statement and month-end close prompts all went through this bug before the fix.
+- `holded_vat_summary` reports a tax key with no rate in the account's own tax records as unknown, not as a genuine 0 per cent tax. The two look identical in a raw total; only one of them is safe to file.
+- `README.md` and `llms.txt` both stated "Fourteen hierarchical tools with an `action` parameter". Thirteen tool modules take an `action`; `holded_discover` and `holded_request` do not. Both documents now say thirteen, and a surface test derives the number from the code so it cannot drift again.
+
 ## [2.0.0] - 2026-09-06
 
 Rewrite in TypeScript to the standard of `@t4dhg/mcp-factorial`: hierarchical tools, Zod schemas built from real responses, validated writes, a structured HTTP client with retries, and a confirmation gate on every destructive operation, enforced by a structural test.
