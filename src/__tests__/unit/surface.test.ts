@@ -106,15 +106,26 @@ describe('resources and prompts are documented with correct counts', () => {
     expect(readFileSync(llmsPath, 'utf8')).toMatch(phrase);
   });
 
-  it('states the resource and prompt counts correctly in server.json', async () => {
-    const client = await connectedClient();
-    const { resources } = await client.listResources();
-    const { prompts } = await client.listPrompts();
-    const resourcePhrase = new RegExp(`${WORDS[resources.length]} resources`, 'i');
-    const promptPhrase = new RegExp(`${WORDS[prompts.length]} prompts`, 'i');
-    const serverJson = JSON.parse(readFileSync(serverJsonPath, 'utf8')) as { description: string };
-    expect(serverJson.description).toMatch(resourcePhrase);
-    expect(serverJson.description).toMatch(promptPhrase);
+  /**
+   * The official MCP registry rejects a server.json whose description exceeds
+   * 100 characters with a 422, which is only discovered at publish time. This
+   * guard moves that failure to the test suite.
+   *
+   * It deliberately does NOT assert the resource and prompt counts here, as an
+   * earlier version did. Within 100 characters, carrying both counts costs the
+   * description the domain list a reader needs to recognise the server, and it
+   * would diverge from the already-published registry entry. The counts are
+   * guarded where they matter to a reader, in README.md and llms.txt above.
+   */
+  it('keeps the registry description inside the length the registry accepts', () => {
+    const serverJson = JSON.parse(readFileSync(serverJsonPath, 'utf8')) as {
+      description: string;
+      title: string;
+    };
+    expect(serverJson.description.length).toBeGreaterThan(0);
+    expect(serverJson.description.length).toBeLessThanOrEqual(100);
+    expect(serverJson.title.length).toBeLessThanOrEqual(100);
+    expect(serverJson.description).toMatch(/holded/i);
   });
 
   it('documents every registered resource URI in the README', async () => {
