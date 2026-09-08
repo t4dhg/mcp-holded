@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-08
+
+No runtime code changed in this release. No tool, resource or prompt was added, removed or altered, so upgrading from 2.1.0 changes nothing about how the server behaves.
+
+### Changed
+
+- Republished so that the `latest` dist-tag carries a provenance attestation whose source commit is present in the repository. The attestation on 2.1.0 points at a commit that the history rewrite below replaced, so it no longer resolves. Verification of 2.1.0 will fail on that basis; 2.1.1 verifies cleanly.
+- The published git history was rewritten to correct editorial text in earlier commit messages and changelog entries. Existing clones will not fast-forward. Re-clone, or run `git fetch --force --prune --prune-tags --tags origin && git reset --hard origin/main`. Every tag from `v1.0.1` onward now points at a different commit.
+- The tracked ignore file no longer lists machine-local editor and assistant configuration. Those belong in a per-clone exclude, which does not travel with the repository.
+
+### Added
+
+- A pre-commit scan that refuses to stage credential-shaped values and internal planning artefacts. It is deterministic, runs ahead of the formatter so a rejected commit is never reformatted first, and carries its own unit tests. It has to name the filenames and token prefixes it detects; those literals are confined to one labelled table.
+
+### Fixed
+
+- `format:check` no longer matches Markdown outside the project, so a clean checkout and a working machine give the same result. It now names `README.md`, `CONTRIBUTING.md` and `SECURITY.md` explicitly.
+- The registry description fits inside the 100 character limit the registry enforces, which was rejecting the submission with a 422. A test now guards that length directly instead of asserting surface counts that the length problem did not affect.
+
 ### Removed
 
 - `smithery.yaml`. Smithery lists only remote HTTP servers. Verified against their registry API: every listed server reports `remote: true`, this package returned 404, and the stdio-only reference servers are absent while a server with a hosted endpoint is present. This server runs locally over stdio, so the configuration was inert and its presence implied a listing that never existed.

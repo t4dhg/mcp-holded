@@ -1,6 +1,6 @@
 {
   "name": "@t4dhg/mcp-holded",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "mcpName": "io.github.t4dhg/mcp-holded",
   "description": "MCP server for the Holded API v2: contacts, sales and purchase documents, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks, with confirmation gates on every destructive operation.",
   "type": "module",

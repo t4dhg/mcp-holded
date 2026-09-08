@@ -32,7 +32,7 @@ Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys 
 
 ## How it compares
 
-Four MCP servers for Holded exist on npm. This compares the published code of each, not their descriptions, as at **2026-09-08**: `@t4dhg/mcp-holded` 2.1.0, `@nubiia/mcp-holded` 2.0.2, `@energio/holded-mcp` 1.5.1 and `holded-mcp` 1.0.0. It is a snapshot and will age; check the current versions yourself before relying on it.
+Four MCP servers for Holded exist on npm. This compares the published code of each, not their descriptions, as at **2026-09-08**: `@t4dhg/mcp-holded` 2.1.1, `@nubiia/mcp-holded` 2.0.2, `@energio/holded-mcp` 1.5.1 and `holded-mcp` 1.0.0. It is a snapshot and will age; check the current versions yourself before relying on it.
 
 |                              | `@t4dhg/mcp-holded`                                  | `@nubiia/mcp-holded`                                                             | `@energio/holded-mcp`                                       | `holded-mcp`                                                |
 | ---------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |

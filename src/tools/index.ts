@@ -29,7 +29,7 @@ import { registerRequestTool } from './request.js';
 import { registerResources } from '../resources/index.js';
 import { registerPrompts } from '../prompts/index.js';
 
-export const SERVER_VERSION = '2.1.0';
+export const SERVER_VERSION = '2.1.1';
 
 export function createServer(): McpServer {
   const server = new McpServer({ name: 'holded', version: SERVER_VERSION });
