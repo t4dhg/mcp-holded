@@ -10,7 +10,7 @@ No runtime code changed in this release. No tool, resource or prompt was added, 
 
 ### Changed
 
-- Republished so that the `latest` dist-tag carries a provenance attestation whose source commit is present in the repository. The attestation on 2.1.0 points at a commit that the history rewrite below replaced, so it no longer resolves. Verification of 2.1.0 will fail on that basis; 2.1.1 verifies cleanly.
+- Republished so that the `latest` dist-tag carries a provenance attestation whose source commit is present in the repository. The attestation on 2.1.0 names a commit that the history rewrite below replaced: no branch or tag reaches it and it is absent from a fresh clone, so 2.1.0 cannot be verified against the repository as published. GitHub may keep serving that commit by its hash until it garbage-collects, so a verifier that fetches by hash alone can still succeed for now. The 2.1.1 attestation names the `v2.1.1` tag and verifies against any clone.
 - The published git history was rewritten to correct editorial text in earlier commit messages and changelog entries. Existing clones will not fast-forward. Re-clone, or run `git fetch --force --prune --prune-tags --tags origin && git reset --hard origin/main`. `v2.0.0` and `v2.1.0` now point at different commits; `v1.0.1` is unchanged.
 - The tracked ignore file no longer lists machine-local editor and assistant configuration. Those belong in a per-clone exclude, which does not travel with the repository.
 
