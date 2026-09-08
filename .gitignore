@@ -22,3 +22,7 @@ coverage/
 test-results/
 .vitest/
 
+
+# Planning and process artefacts are never committed to this repository.
+# Keep design notes, plans and working files outside it.
+/docs/
