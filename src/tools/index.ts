@@ -2,7 +2,7 @@
 /**
  * MCP server for the Holded API v2.
  *
- * Fourteen hierarchical tools, one per domain, each with an `action`
+ * Thirteen hierarchical tools, one per domain, each with an `action`
  * parameter, plus `holded_discover` to list them and `holded_request` as a
  * gated escape hatch for anything without a dedicated action.
  */

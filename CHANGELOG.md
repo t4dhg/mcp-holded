@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Fixed
 
-- `unpaidRemainder` now derives an absent `payments_pending` as total less paid, instead of treating the absence as zero. A wholly unpaid invoice whose pending figure the API omitted could previously be reported as settled; the aged receivables, VAT summary, statement and month-end close prompts all went through this bug before the fix.
+- `unpaidRemainder` now derives an absent `payments_pending` as total less paid, instead of treating the absence as zero. A wholly unpaid invoice whose pending figure the API omitted could previously be reported as settled; the aged receivables, statement and month-end close prompts all went through this bug before the fix.
 - `holded_vat_summary` reports a tax key with no rate in the account's own tax records as unknown, not as a genuine 0 per cent tax. The two look identical in a raw total; only one of them is safe to file.
 - `README.md` and `llms.txt` both stated "Fourteen hierarchical tools with an `action` parameter". Thirteen tool modules take an `action`; `holded_discover` and `holded_request` do not. Both documents now say thirteen, and a surface test derives the number from the code so it cannot drift again.
 
