@@ -3,16 +3,30 @@
 ## Development
 
 ```bash
-npm install
+nvm use
+npm ci
+npm run setup:hooks
+npm run audit
 npm run lint
 npm run typecheck
 npm run format:check
 npm test
 npm run build
-HOLDED_API_KEY=pat_..._... npm run smoke
+npm run check:package
+npm run test:smoke
+# Optional live GET check, only with your own test account:
+# HOLDED_API_KEY=pat_..._... npm run smoke:live
 ```
 
-Husky runs lint-staged on commit. CI runs the same checks on Node 18, 20, 22 and 24.
+Use Node 24 for development (`.nvmrc`); full tests run on Node 22 and 24. The published runtime requires Node 20 or later and is independently installed with strict engine checking on Node 20, 22 and 24.
+
+Run `npm run setup:hooks` once after cloning to enable Husky and lint-staged locally. The published package has no install lifecycle scripts; `npm ci` intentionally does not configure hooks.
+
+`npm run build` cleans old emitted files before compiling. CI audits all development and runtime dependencies, inspects the actual tarball, then installs and audits fresh consumers and checks stdio without real credentials.
+
+Typed client arrays are bounded at 1,000 items, preserving lower API-specific limits and legitimate empty optional arrays. The SDK additionally bounds tool arguments at 10,000 combined elements/members so arbitrary JSON fields cannot bypass the resource budget. Response pagination is not capped by the request-array helper.
+
+The minimatch overrides are scoped to ESLint, its config-array helper and typescript-eslint: these consume the named API supported by minimatch 11. Do not apply a blanket override to older default-export consumers. Remove each override when its parent permits the patched version natively; run lint and the full suite after changing it.
 
 ## API-first rule
 
@@ -32,7 +46,7 @@ Use GET only when exploring. Do not POST, PUT or DELETE against a production acc
 
 Releases are staged by CI and promoted by a human.
 
-1. Update `CHANGELOG.md` and bump `version` in `package.json`.
+1. Update `CHANGELOG.md`, `package.json`, `package-lock.json`, both versions in `server.json`, and `SERVER_VERSION` in `src/tools/index.ts`. Run the full checks above and the package-checker regression suite (`npm run test:package-checker`).
 2. Commit, then tag and push:
 
    ```bash
@@ -41,7 +55,7 @@ Releases are staged by CI and promoted by a human.
    git push origin vX.Y.Z
    ```
 
-3. The `Publish to npm` workflow runs tests and build, then `npm stage publish`. It authenticates over OIDC as a trusted publisher, so there is no npm token in the repository or its secrets. The tarball is uploaded but is not installable yet.
+3. The `Stage npm release` workflow runs audits and the complete quality gate, verifies the tarball and a strict fresh consumer, then stages that exact inspected tarball. It authenticates over OIDC as a trusted publisher, so there is no npm token in the repository or its secrets. The tarball is uploaded but is not installable yet.
 4. Inspect and promote it. This needs npm 11.19.0 or later locally:
 
    ```bash

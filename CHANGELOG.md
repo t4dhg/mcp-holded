@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-11-04
+
+### Breaking changes
+
+- Node.js 20 is now the minimum runtime. Use Node 24 for development.
+- Typed client arrays accept at most 1,000 items, including nested lists; bank movement batches retain their existing 100-item limit. Tool arguments are also limited to 10,000 combined array elements and object members. Split larger requests into smaller calls.
+
+### Fixed
+
+- Raise MCP SDK and Zod version floors to patched releases and refresh all runtime and development dependency resolutions. Upgrade affected test and lint tooling with scoped minimatch overrides.
+- Reject oversized collections before parsing their elements or allocating an error for each malformed item.
+- Remove the published Husky `prepare` lifecycle. Contributors enable hooks explicitly with `npm run setup:hooks`.
+- Clean obsolete build output before compiling; verify manifest entry points and reject lifecycle scripts, test material and nested archives in the actual tarball.
+- Enforce dependency audits and strict fresh-consumer checks in CI and release staging. Credential-free stdio checks cover initialization, all 15 tools, validation, discovery and shutdown.
+
 ## [Unreleased]
 
 ## [2.1.1] - 2026-09-08

@@ -29,6 +29,34 @@ import {
 // exactly what the detection functions receive as their input.
 
 describe('preflight-scan: secrets', () => {
+  it('permits only exact credential ignore entries while still blocking broader tooling references', () => {
+    const paths = [
+      '.cur' + 'sor/mcp.json',
+      '.clau' + 'de/settings.local.json',
+      '.co' + 'dex/config.toml',
+    ];
+    const findings = runScan({
+      stagedPaths: ['.gitignore'],
+      addedLines: new Map([
+        ['.gitignore', paths.map((text, index) => ({ line: index + 1, text }))],
+      ]),
+    });
+    expect(hasBlockingFindings(findings)).toBe(false);
+    for (const path of paths) expect(classifyStagedPath(path)).not.toBeNull();
+    for (const text of ['.cur' + 'sor/', '!.cur' + 'sor/mcp.json', 'See .cur' + 'sor/mcp.json']) {
+      const blocked = runScan({
+        stagedPaths: ['.gitignore'],
+        addedLines: new Map([['.gitignore', [{ line: 1, text }]]]),
+      });
+      expect(hasBlockingFindings(blocked)).toBe(true);
+    }
+    const documented = runScan({
+      stagedPaths: ['README.md'],
+      addedLines: new Map([['README.md', [{ line: 1, text: paths[0] }]]]),
+    });
+    expect(hasBlockingFindings(documented)).toBe(true);
+  });
+
   it('catches a real-looking GitHub personal access token', () => {
     const line = 'const token = ' + ('ghp_' + 'realTokenShapedValueHere1234');
     const findings = scanLineForSecrets(line);

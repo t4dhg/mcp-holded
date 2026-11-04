@@ -1,50 +1,53 @@
-name: Publish to npm
-
+name: Stage npm release
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
-
+permissions:
+  contents: read
 jobs:
-  publish:
-    name: Publish Package
+  stage:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
-      # Mints the OIDC token that authenticates the publish. Without this,
-      # trusted publishing cannot work.
       id-token: write
     steps:
       - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
-          # Trusted publishing requires npm >= 11.5.1 and Node >= 22.14.0.
-          # Node 24 ships npm 11.x. Node 20 and 22 ship npm 10.x and cannot
-          # authenticate over OIDC, which is why publishes here used a token.
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-          # npm's guidance: never cache in release builds.
+          registry-url: https://registry.npmjs.org
           package-manager-cache: false
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm run test
-
-      - name: Build
-        run: npm run build
-
-      # No NODE_AUTH_TOKEN. This authenticates with the OIDC token minted by the
-      # id-token permission above, matched against the trusted publisher
-      # configured for this package on npmjs.com. Provenance is automatic.
-      #
-      # `stage publish` uploads the tarball but does NOT make it installable.
-      # A human then inspects it and runs `npm stage approve <stage-id>`, which
-      # is where 2FA is proved. CI therefore cannot ship a release on its own,
-      # so a compromised workflow cannot put a version in front of users.
-      # Promoting a staged release is documented in CONTRIBUTING.md.
-      - name: Stage the release
-        run: npm stage publish --access public
+      - name: Require matching release tag
+        run: node -e 'const p=require("./package.json"); if(process.env.GITHUB_REF!=="refs/tags/v"+p.version) throw Error("Run on the matching version tag");'
+      - run: npm ci
+      - run: npm run audit
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run test:package-checker
+      - run: npm run test:coverage
+      - run: npm run build
+      - name: Inspect the actual release artifact
+        run: npm run check:package -- "$RUNNER_TEMP/package"
+      - name: Install inspected release candidate
+        run: npm install --prefix "$RUNNER_TEMP/consumer" "$RUNNER_TEMP/package/"*.tgz --engine-strict --omit=dev --ignore-scripts --no-audit --no-fund
+      - name: Audit fresh runtime dependencies
+        run: npm audit --prefix "$RUNNER_TEMP/consumer" --omit=dev --audit-level=low
+      - name: Verify installed executable
+        run: node scripts/stdio-smoke.mjs "$RUNNER_TEMP/consumer/node_modules/.bin/mcp-holded"
+      - name: Record and stage the inspected tarball
+        shell: bash
+        run: |
+          set -o pipefail
+          node -e 'const p=require(process.env.RUNNER_TEMP+"/package/pack-manifest.json"); require("fs").appendFileSync(process.env.GITHUB_STEP_SUMMARY, ["Commit: "+process.env.GITHUB_SHA,"Package: "+p.name+"@"+p.version,"SHA1: "+p.shasum,"Integrity: "+p.integrity].join("\n\n")+"\n");'
+          npm stage publish "$RUNNER_TEMP/package/"*.tgz --access public --json | tee "$RUNNER_TEMP/package/stage-result.json"
+      - name: Retain release candidate and receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-release-candidate
+          path: ${{ runner.temp }}/package/
+          if-no-files-found: ignore

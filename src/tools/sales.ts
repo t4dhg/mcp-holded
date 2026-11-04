@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as api from '../api/index.js';
 import { SALES_TYPES, type SalesType } from '../api/documents.js';
 import { inputs } from '../schemas/index.js';
+import { inputArray } from '../schemas/input-array.js';
 import { formatToolError, jsonResponse, requireArg, textResponse } from '../tool-utils.js';
 import {
   checkConfirmation,
@@ -67,7 +68,9 @@ export function registerSalesTool(server: McpServer) {
           .default('invoice')
           .describe('Document type (default invoice)'),
         id: idArg,
-        ids: z.array(z.string()).optional().describe('Invoice ids for bulk actions'),
+        ids: inputArray(z.string())
+          .optional()
+          .describe('Invoice ids for bulk actions (maximum 1000)'),
         document_number: z.string().optional().describe('For find_by_number'),
         output_path: z.string().optional().describe('Where to save the PDF'),
         file_path: z.string().optional().describe('Local file to upload for attach'),

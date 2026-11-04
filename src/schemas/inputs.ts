@@ -5,12 +5,13 @@
  * unknown keys are rejected so a typo does not silently vanish.
  */
 import { z } from 'zod';
+import { inputArray } from './input-array.js';
 
 const Str = z.string();
 const NStr = z.string().nullable();
 const NNum = z.number().nullable();
 const NBool = z.boolean().nullable();
-const StrList = z.array(z.string());
+const StrList = inputArray(z.string());
 const CustomFieldInput = z.strictObject({ field: Str, value: z.unknown() });
 
 // ---------------------------------------------------------------------------
@@ -58,13 +59,13 @@ export const ContactInput = z.strictObject({
   sepa_ref: NStr.optional(),
   bill_address: AddressInput.optional(),
   tags: StrList.optional(),
-  custom_fields: z.array(CustomFieldInput).optional(),
+  custom_fields: inputArray(CustomFieldInput).optional(),
   defaults: ContactDefaultsInput.optional(),
-  contact_persons: z.array(z.record(z.string(), z.unknown())).optional(),
+  contact_persons: inputArray(z.record(z.string(), z.unknown())).optional(),
 });
 export type ContactInput = z.infer<typeof ContactInput>;
 
-export const ContactIdsInput = z.strictObject({ contact_ids: z.array(Str).min(1) });
+export const ContactIdsInput = z.strictObject({ contact_ids: inputArray(Str).min(1) });
 export const ContactGroupInput = z.strictObject({
   name: Str,
   description: Str.optional(),
@@ -105,9 +106,9 @@ export const DocumentInput = z.strictObject({
   language: NStr.optional(),
   currency: NStr.optional(),
   currency_change: NNum.optional(),
-  items: z.array(DocumentLineInput).min(1),
+  items: inputArray(DocumentLineInput).min(1),
   tags: StrList.optional(),
-  custom_fields: z.array(CustomFieldInput).optional(),
+  custom_fields: inputArray(CustomFieldInput).optional(),
   number: NStr.optional(),
   number_line_id: NStr.optional(),
   warehouse_id: NStr.optional(),
@@ -138,12 +139,12 @@ export const DocumentPaymentInput = z.strictObject({
 });
 
 export const SendInput = z.strictObject({
-  emails: z.array(Str.email()).min(1),
+  emails: inputArray(Str.email()).min(1),
   subject: NStr.optional(),
   message: NStr.optional(),
   mail_template_id: NStr.optional(),
-  cc: z.array(Str.email()).optional(),
-  bcc: z.array(Str.email()).optional(),
+  cc: inputArray(Str.email()).optional(),
+  bcc: inputArray(Str.email()).optional(),
 });
 
 export const PipelineInput = z.strictObject({ pipeline_id: Str });
@@ -152,14 +153,14 @@ export const EstimateDecisionInput = z.strictObject({
   comment: NStr.optional(),
 });
 export const ReceiveInput = z.strictObject({
-  items: z.array(z.strictObject({ line_id: Str, units: z.number() })).min(1),
+  items: inputArray(z.strictObject({ line_id: Str, units: z.number() })).min(1),
   date: NStr.optional(),
   warehouse_id: NStr.optional(),
 });
 export const SkipInput = z.strictObject({ date: Str });
-export const IdsInput = z.strictObject({ ids: z.array(Str).min(1) });
+export const IdsInput = z.strictObject({ ids: inputArray(Str).min(1) });
 export const BulkApproveInput = z.strictObject({
-  ids: z.array(Str).optional(),
+  ids: inputArray(Str).optional(),
   filter: z
     .strictObject({
       start_date: Str.optional(),
@@ -234,30 +235,28 @@ const BankMovementInput = z.strictObject({
 });
 export const BankMovementsInput = z.union([
   BankMovementInput,
-  z.array(BankMovementInput).min(1).max(100),
+  inputArray(BankMovementInput).min(1).max(100),
 ]);
 export const ReconcileInput = z.strictObject({
-  documents: z
-    .array(
-      z.strictObject({
-        document_id: Str,
-        document_type: z.enum([
-          'invoice',
-          'salesreceipt',
-          'purchase',
-          'creditnote',
-          'purchaserefund',
-          'payroll',
-          'payment',
-          'remittance',
-          'purchasereceipt',
-          'collection',
-          'receipt',
-          'entry',
-        ]),
-      })
-    )
-    .min(1),
+  documents: inputArray(
+    z.strictObject({
+      document_id: Str,
+      document_type: z.enum([
+        'invoice',
+        'salesreceipt',
+        'purchase',
+        'creditnote',
+        'purchaserefund',
+        'payroll',
+        'payment',
+        'remittance',
+        'purchasereceipt',
+        'collection',
+        'receipt',
+        'entry',
+      ]),
+    })
+  ).min(1),
 });
 export const InvoicingForecastInput = z.record(z.string(), z.unknown());
 
@@ -268,17 +267,15 @@ export const LedgerEntryInput = z.strictObject({
   date: Str,
   notes: NStr.optional(),
   contact_id: NStr.optional(),
-  lines: z
-    .array(
-      z.strictObject({
-        account: z.number().int(),
-        description: NStr.optional(),
-        debit: Str,
-        credit: Str,
-        tags: StrList.optional(),
-      })
-    )
-    .min(2),
+  lines: inputArray(
+    z.strictObject({
+      account: z.number().int(),
+      description: NStr.optional(),
+      debit: Str,
+      credit: Str,
+      tags: StrList.optional(),
+    })
+  ).min(2),
 });
 export const AccountingAccountInput = z.strictObject({
   prefix: z.number().int(),
@@ -323,8 +320,8 @@ export const ProductInput = z.strictObject({
   has_stock: z.boolean(),
   for_sale: z.boolean(),
   for_purchase: z.boolean(),
-  variants: z.array(z.record(z.string(), z.unknown())).optional(),
-  pack_items: z.array(z.strictObject({ product_selection: Str, units: z.number() })).optional(),
+  variants: inputArray(z.record(z.string(), z.unknown())).optional(),
+  pack_items: inputArray(z.strictObject({ product_selection: Str, units: z.number() })).optional(),
 });
 export const ProductUpdateInput = z.strictObject({
   name: Str,
@@ -340,8 +337,8 @@ export const ProductUpdateInput = z.strictObject({
   for_sale: z.boolean(),
   for_purchase: z.boolean(),
   archived: z.boolean(),
-  variants: z.array(z.record(z.string(), z.unknown())).optional(),
-  pack_items: z.array(z.strictObject({ product_selection: Str, units: z.number() })).optional(),
+  variants: inputArray(z.record(z.string(), z.unknown())).optional(),
+  pack_items: inputArray(z.strictObject({ product_selection: Str, units: z.number() })).optional(),
   show_start_date: NBool.optional(),
   show_end_date: NBool.optional(),
 });
@@ -418,7 +415,7 @@ export const LeadInput = z.strictObject({
   value: NNum.optional(),
   potential: NNum.optional(),
   due_date: NStr.optional(),
-  custom_fields: z.array(z.record(z.string(), z.unknown())).optional(),
+  custom_fields: inputArray(z.record(z.string(), z.unknown())).optional(),
 });
 export const LeadUpdateInput = LeadInput.partial().extend({
   status: z.enum(['open', 'won', 'lost']).optional(),
@@ -450,7 +447,7 @@ export const ProjectUpdateInput = ProjectInput.partial().extend({
   billable: NBool.optional(),
   tags: StrList.optional(),
   allow_notifications: NBool.optional(),
-  lists: z.array(z.record(z.string(), z.unknown())).optional(),
+  lists: inputArray(z.record(z.string(), z.unknown())).optional(),
 });
 export const TaskInput = z.strictObject({
   project_id: Str,
@@ -490,7 +487,9 @@ export const EventInput = z.strictObject({
   tags: StrList.optional(),
   lead_id: NStr.optional(),
   location: NStr.optional(),
-  participants: z.array(z.strictObject({ email: Str.email(), name: NStr.optional() })).optional(),
+  participants: inputArray(
+    z.strictObject({ email: Str.email(), name: NStr.optional() })
+  ).optional(),
 });
 export const EventUpdateInput = EventInput.partial();
 export const BookingInput = z.strictObject({
@@ -498,11 +497,11 @@ export const BookingInput = z.strictObject({
   service_id: Str,
   date_time: Str,
   language: Str,
-  custom_fields: z.array(z.strictObject({ key: Str, value: NStr })).optional(),
+  custom_fields: inputArray(z.strictObject({ key: Str, value: NStr })).optional(),
 });
 export const BookingUpdateInput = z.strictObject({
   date_time: NStr.optional(),
-  custom_fields: z.array(z.strictObject({ key: Str, value: NStr })).optional(),
+  custom_fields: inputArray(z.strictObject({ key: Str, value: NStr })).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -515,12 +514,12 @@ export const InboxAttachInput = z.strictObject({
 export const InboxUpdateInput = z.record(z.string(), z.unknown());
 export const WebhookInput = z.strictObject({
   url: Str.url(),
-  events: z.array(Str).min(1),
+  events: inputArray(Str).min(1),
   version: NStr.optional(),
   description: Str.optional(),
 });
 export const WebhookUpdateInput = z.strictObject({
   url: Str.url(),
-  events: z.array(Str).min(1),
+  events: inputArray(Str).min(1),
   description: Str.optional(),
 });

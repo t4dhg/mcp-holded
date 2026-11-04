@@ -39,6 +39,15 @@ import { pathToFileURL } from 'node:url';
 // touches it.
 export const SELF_PATH = 'scripts/preflight-scan.mjs';
 
+// Exact credential-file ignore rules protect every clone. Broader local tooling
+// references still belong in the per-clone exclude file, not published content.
+const CREDENTIAL_IGNORE_ENTRIES = new Set([
+  '.mcp.json',
+  '.codex/config.toml',
+  '.cursor/mcp.json',
+  '.claude/settings.local.json',
+]);
+
 // ---------------------------------------------------------------------------
 // DETECTION PATTERNS
 // ---------------------------------------------------------------------------
@@ -50,7 +59,7 @@ export const SELF_PATH = 'scripts/preflight-scan.mjs';
 const ASSISTANT_CONFIG_FILENAMES = ['CLAUDE.md', 'AGENTS.md', 'GEMINI.md', '.cursorrules'];
 
 /** Directory prefixes that hold assistant/editor configuration or state. */
-const ASSISTANT_CONFIG_DIR_PREFIXES = ['.claude/', '.cursor/', '.github/copilot-'];
+const ASSISTANT_CONFIG_DIR_PREFIXES = ['.claude/', '.codex/', '.cursor/', '.github/copilot-'];
 
 /** Basename prefix for the family of dotfiles one assistant/editor integration uses. */
 const ASSISTANT_CONFIG_BASENAME_PREFIXES = ['.aider'];
@@ -452,7 +461,11 @@ export function runScan({ stagedPaths, addedLines, filesList = [] }) {
         findings.secrets.push({ path: filePath, line, reason: secretFinding.reason });
       }
 
-      for (const referenceFinding of scanLineForReferences(text)) {
+      const referenceFindings =
+        filePath === '.gitignore' && CREDENTIAL_IGNORE_ENTRIES.has(text)
+          ? []
+          : scanLineForReferences(text);
+      for (const referenceFinding of referenceFindings) {
         findings.artifactReferences.push({
           path: filePath,
           line,

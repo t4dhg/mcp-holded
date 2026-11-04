@@ -3,7 +3,7 @@
   "name": "io.github.t4dhg/mcp-holded",
   "title": "MCP Holded",
   "description": "MCP server for Holded (Spanish ERP): invoicing, accounting, treasury, CRM, projects, payroll.",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "repository": {
     "url": "https://github.com/t4dhg/mcp-holded",
     "source": "github"
@@ -14,7 +14,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@t4dhg/mcp-holded",
-      "version": "2.1.1",
+      "version": "3.0.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"

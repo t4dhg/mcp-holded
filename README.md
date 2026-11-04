@@ -10,7 +10,7 @@
 [![CI](https://github.com/t4dhg/mcp-holded/actions/workflows/ci.yml/badge.svg)](https://github.com/t4dhg/mcp-holded/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/t4dhg/mcp-holded/branch/main/graph/badge.svg)](https://codecov.io/gh/t4dhg/mcp-holded)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-brightgreen.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-brightgreen.svg)](https://nodejs.org/)
 [![npm version](https://img.shields.io/npm/v/@t4dhg/mcp-holded.svg)](https://www.npmjs.com/package/@t4dhg/mcp-holded)
 [![npm downloads](https://img.shields.io/npm/dm/@t4dhg/mcp-holded.svg)](https://www.npmjs.com/package/@t4dhg/mcp-holded)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io/)
@@ -28,7 +28,7 @@ Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys 
 - **Seven MCP resources and six MCP prompts.** The resources carry the account's own tax keys, numbering series, payment methods and chart of accounts, plus the API behaviour a schema cannot express. The prompts run the real workflows: aged receivables, VAT summary, bank reconciliation, statements, month-end close.
 - **A confirmation gate on every destructive operation**, with a structural test that keeps the documented list equal to the code. Nothing that deletes, overwrites, approves or emails goes through without `confirm: true`.
 - **Zod validation of every request and every response.** A shape the server has not seen surfaces as a clear schema error rather than a silent success.
-- **Over 200 tests against anonymised real v2 responses**, npm provenance via trusted publishing, and Node 18 or later.
+- **Over 200 tests against anonymised real v2 responses**, npm provenance via trusted publishing, and Node 20 or later.
 
 ## How it compares
 
@@ -112,7 +112,9 @@ Edit `.vscode/mcp.json`. Note the key is `servers`, not `mcpServers`:
 }
 ```
 
-Requires Node.js 18 or later.
+Requires Node.js 20 or later. Development uses Node 24 (`nvm use`).
+
+Typed request collections accept at most 1,000 items, including nested collections. Existing lower API limits still apply (bank movement batches accept at most 100). A tool call may contain at most 10,000 combined array elements and object members, including arbitrary JSON payloads. Split larger operations into smaller calls.
 
 ### Environment variables
 
@@ -297,9 +299,11 @@ Every request is then logged to stderr. Never to stdout, which is the MCP transp
 ## Development
 
 ```bash
-npm install
+nvm use
+npm ci
+npm run setup:hooks
 npm run lint && npm run typecheck && npm run format:check && npm test && npm run build
-HOLDED_API_KEY=pat_..._... npm run smoke   # spawns the built server over stdio and makes one read call
+HOLDED_API_KEY=pat_..._... npm run smoke:live   # spawns the built server over stdio and makes one read call
 ```
 
 Tests run against anonymised fixtures in `src/__tests__/fixtures`, each a real v2 response with names, tax ids, addresses, bank details and amounts replaced. Add a fixture when you add an endpoint; the schema test fails on any fixture without a schema.

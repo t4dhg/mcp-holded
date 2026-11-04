@@ -1,6 +1,6 @@
 {
   "name": "@t4dhg/mcp-holded",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "mcpName": "io.github.t4dhg/mcp-holded",
   "description": "MCP server for the Holded API v2: contacts, sales and purchase documents, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks, with confirmation gates on every destructive operation.",
   "type": "module",
@@ -20,7 +20,7 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "clean": "rm -rf dist coverage .vitest test-results",
@@ -33,10 +33,15 @@
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.json\" \"*.json\" \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"src/**/*.json\" \"*.json\" \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\"",
     "typecheck": "tsc --noEmit",
-    "smoke": "node scripts/smoke-test.mjs",
+    "smoke": "npm run test:smoke",
     "scan": "node scripts/preflight-scan.mjs",
-    "prepublishOnly": "npm run test && npm run build",
-    "prepare": "husky"
+    "prepublishOnly": "npm run audit && npm run lint && npm run typecheck && npm run format:check && npm run test:coverage && npm run build && npm run check:package && npm run test:smoke",
+    "audit": "npm audit --audit-level=low",
+    "check:package": "node scripts/check-package.mjs",
+    "test:smoke": "node scripts/stdio-smoke.mjs",
+    "setup:hooks": "husky",
+    "test:package-checker": "node --test scripts/check-package.test.mjs",
+    "smoke:live": "node scripts/smoke-test.mjs"
   },
   "lint-staged": {
     "src/**/*.ts": [
@@ -89,22 +94,34 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "zod": "^4.4.3"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@eslint/js": "^9.17.0",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.0",
-    "@vitest/coverage-v8": "^2.1.8",
-    "eslint": "^9.17.0",
+    "@vitest/coverage-v8": "^4.1.12",
+    "eslint": "^10.14.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.11",
+    "lint-staged": "^15.5.2",
     "prettier": "^3.4.2",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.18.2",
-    "vitest": "^2.1.8"
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^4.1.12",
+    "vite": "^6.4.5"
+  },
+  "overrides": {
+    "eslint": {
+      "minimatch": "^11.0.4"
+    },
+    "@eslint/config-array": {
+      "minimatch": "^11.0.4"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.4"
+    }
   }
 }

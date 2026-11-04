@@ -2,6 +2,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import * as api from '../api/index.js';
 import { inputs } from '../schemas/index.js';
+import { inputArray } from '../schemas/input-array.js';
 import { formatToolError, jsonResponse, requireArg, textResponse } from '../tool-utils.js';
 import {
   checkConfirmation,
@@ -42,7 +43,9 @@ export function registerContactsTool(server: McpServer) {
           'delete_group',
         ]),
         id: idArg,
-        ids: z.array(z.string()).optional().describe('Contact ids for bulk actions'),
+        ids: inputArray(z.string())
+          .optional()
+          .describe('Contact ids for bulk actions (maximum 1000)'),
         name: z.string().optional().describe('Name fragment for search'),
         email: z.string().optional(),
         code: z.string().optional().describe('Tax id (NIF/CIF) exact match'),

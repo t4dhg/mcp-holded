@@ -29,10 +29,13 @@ import { registerRequestTool } from './request.js';
 import { registerResources } from '../resources/index.js';
 import { registerPrompts } from '../prompts/index.js';
 
-export const SERVER_VERSION = '2.1.1';
+export const SERVER_VERSION = '3.0.0';
 
 export function createServer(): McpServer {
-  const server = new McpServer({ name: 'holded', version: SERVER_VERSION });
+  const server = new McpServer(
+    { name: 'holded', version: SERVER_VERSION },
+    { maxToolInputElements: 10000 }
+  );
 
   server.registerTool(
     'holded_discover',
