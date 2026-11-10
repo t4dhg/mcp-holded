@@ -46,7 +46,7 @@ jobs:
           npm stage publish "$RUNNER_TEMP/package/"*.tgz --access public --json | tee "$RUNNER_TEMP/package/stage-result.json"
       - name: Retain release candidate and receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: npm-release-candidate
           path: ${{ runner.temp }}/package/
