@@ -23,7 +23,7 @@ jobs:
       - run: npm run test:package-checker
       - run: npm run build
       - run: npm run check:package -- "$RUNNER_TEMP/package"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: npm-package
           path: ${{ runner.temp }}/package/*.tgz
