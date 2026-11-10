@@ -52,7 +52,10 @@ export function registerContactsTool(server: McpServer) {
         phone: z.string().optional(),
         mobile: z.string().optional(),
         custom_id: z.string().optional(),
-        file_path: z.string().optional().describe('Local file to upload for attach'),
+        file_path: z
+          .string()
+          .optional()
+          .describe('Local file to upload for attach (requires confirmation)'),
         data: dataArg,
         confirm: confirmArg,
         ...listArgs,
@@ -121,9 +124,16 @@ export function registerContactsTool(server: McpServer) {
           case 'list_attachments':
             return jsonResponse(await api.listContactAttachments(requireArg(args.id, 'id')));
           case 'attach': {
-            const file = await readLocalFile(requireArg(args.file_path, 'file_path'));
+            const id = requireArg(args.id, 'id');
+            const filePath = requireArg(args.file_path, 'file_path');
+            const gate = checkConfirmation('attach_contact_file', args.confirm, {
+              filePath,
+              destination: `Holded contact ${id}`,
+            });
+            if (gate.needsConfirmation) return textResponse(gate.message);
+            const file = await readLocalFile(filePath);
             return jsonResponse(
-              await api.attachContactFile(requireArg(args.id, 'id'), file.bytes, file.filename),
+              await api.attachContactFile(id, file.bytes, file.filename),
               'File attached.'
             );
           }

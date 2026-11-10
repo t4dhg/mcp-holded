@@ -42,7 +42,23 @@ export function getApiKey(): string {
 }
 
 export function getBaseUrl(): string {
-  return (process.env.HOLDED_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
+  const value = process.env.HOLDED_BASE_URL || DEFAULT_BASE_URL;
+  try {
+    const url = new URL(value);
+    if (
+      (url.protocol === 'https:' || url.protocol === 'http:') &&
+      !url.username &&
+      !url.password &&
+      !/[?#]/.test(url.href)
+    ) {
+      return url.href.replace(/\/+$/, '');
+    }
+  } catch {
+    // The parser error can contain the full input, including credentials.
+  }
+  throw new ConfigurationError(
+    'HOLDED_BASE_URL must be an HTTP(S) URL without credentials, a query, or a fragment.'
+  );
 }
 
 function intFromEnv(name: string, fallback: number): number {

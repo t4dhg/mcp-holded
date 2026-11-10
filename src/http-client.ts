@@ -12,6 +12,8 @@
 import { getConfig, debug } from './config.js';
 import {
   errorFromResponse,
+  HttpError,
+  InputValidationError,
   isRetryableError,
   NetworkError,
   RateLimitError,
@@ -69,10 +71,27 @@ export function looksLikeHtml(text: string, contentType: string | null): boolean
   return (contentType ?? '').includes('text/html') || HTML_PATTERN.test(text.slice(0, 200));
 }
 
+function redactApiKey(text: string, apiKey: string): string {
+  return text.replaceAll(apiKey, '[REDACTED]');
+}
+
+function parseResponseBody(text: string, apiKey: string): unknown {
+  if (text.trim() === '') return undefined;
+  try {
+    const escapedKey = JSON.stringify(apiKey).slice(1, -1);
+    return JSON.parse(redactApiKey(text, escapedKey), (_field, value: unknown) =>
+      typeof value === 'string' ? redactApiKey(value, apiKey) : value
+    );
+  } catch {
+    return redactApiKey(text, apiKey);
+  }
+}
+
 async function handleJsonResponse<T>(
   response: Response,
   endpoint: string,
-  method: HttpMethod
+  method: HttpMethod,
+  apiKey: string
 ): Promise<T> {
   const text = await response.text();
   const contentType = response.headers.get('content-type');
@@ -83,21 +102,14 @@ async function handleJsonResponse<T>(
 
   // An empty body (204 on DELETE, some 200s) is `undefined`, never null, so
   // callers can distinguish "nothing" from a JSON null.
-  let parsed: unknown = undefined;
-  if (text.trim() !== '') {
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = text;
-    }
-  }
+  const parsed = parseResponseBody(text, apiKey);
 
   if (response.ok) {
     debug('Response', { endpoint, method, status: response.status });
     return parsed as T;
   }
 
-  debug(`API error ${response.status}`, { endpoint, method, body: text.slice(0, 500) });
+  debug(`API error ${response.status}`, { endpoint, method });
   throw errorFromResponse(
     response.status,
     endpoint,
@@ -110,24 +122,20 @@ async function handleJsonResponse<T>(
 async function handleBinaryResponse(
   response: Response,
   endpoint: string,
-  method: HttpMethod
+  method: HttpMethod,
+  apiKey: string
 ): Promise<Uint8Array> {
   if (!response.ok) {
     const text = await response.text();
     if (looksLikeHtml(text, response.headers.get('content-type'))) {
       throw new UnexpectedHtmlError(response.status, endpoint);
     }
-    let parsed: unknown = text;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      // keep text
-    }
+    const parsed = parseResponseBody(text, apiKey);
     throw errorFromResponse(
       response.status,
       endpoint,
       method,
-      parsed as ProblemDetails | string,
+      (parsed ?? null) as ProblemDetails | string | null,
       response.headers.get('retry-after')
     );
   }
@@ -146,10 +154,11 @@ export async function holdedRequest<T>(endpoint: string, options: RequestOptions
   const config = getConfig();
   const method = options.method ?? 'GET';
   const url = buildUrl(config.baseUrl, endpoint, options.params);
+  const safeEndpoint = redactApiKey(endpoint, config.apiKey);
   const timeout = options.timeout ?? config.timeout;
   const maxAttempts = method === 'GET' ? Math.max(1, options.maxRetries ?? config.maxRetries) : 1;
 
-  debug(`${method} ${url}`);
+  debug(`${method} ${redactApiKey(url, config.apiKey)}`);
 
   let lastError: Error | undefined;
 
@@ -170,36 +179,49 @@ export async function holdedRequest<T>(endpoint: string, options: RequestOptions
         body = JSON.stringify(options.body);
       }
 
-      const response = await fetch(url, { method, headers, body, signal: controller.signal });
-      clearTimeout(timer);
+      const response = await fetch(url, {
+        method,
+        headers,
+        body,
+        signal: controller.signal,
+        redirect: 'manual',
+      });
+      if (response.status >= 300 && response.status < 400) {
+        void response.body?.cancel().catch(() => undefined);
+        throw new HttpError(
+          response.status,
+          safeEndpoint,
+          `Holded returned an unexpected redirect (HTTP ${response.status}).`
+        );
+      }
 
       if (options.responseType === 'binary') {
-        return (await handleBinaryResponse(response, endpoint, method)) as T;
+        return (await handleBinaryResponse(response, safeEndpoint, method, config.apiKey)) as T;
       }
-      return await handleJsonResponse<T>(response, endpoint, method);
+      return await handleJsonResponse<T>(response, safeEndpoint, method, config.apiKey);
     } catch (error) {
-      clearTimeout(timer);
-
-      if (error instanceof Error && error.name === 'AbortError') {
-        lastError = new TimeoutError(timeout, endpoint);
+      if (controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
+        lastError = new TimeoutError(timeout, safeEndpoint);
       } else if (error instanceof TypeError) {
-        lastError = new NetworkError(error.message, error);
+        const message = redactApiKey(error.message, config.apiKey);
+        lastError = new NetworkError(message, message === error.message ? error : undefined);
       } else if (error instanceof Error) {
         lastError = error;
       } else {
         lastError = new NetworkError('Unknown failure');
       }
-
-      const shouldRetry = attempt < maxAttempts && isRetryableError(lastError);
-      if (!shouldRetry) break;
-
-      const delay =
-        lastError instanceof RateLimitError && lastError.retryAfter
-          ? lastError.retryAfter * 1000
-          : getBackoffDelay(attempt);
-      debug(`Retry ${attempt}/${maxAttempts} in ${delay}ms`, { error: lastError.message });
-      await sleep(delay);
+    } finally {
+      clearTimeout(timer);
     }
+
+    if (attempt >= maxAttempts || !isRetryableError(lastError)) break;
+
+    const delay =
+      lastError instanceof RateLimitError && lastError.retryAfter
+        ? lastError.retryAfter * 1000
+        : getBackoffDelay(attempt);
+    debug(`Retry ${attempt}/${maxAttempts} in ${delay}ms`, { error: lastError.message });
+    await sleep(delay);
   }
 
   throw lastError ?? new NetworkError('Request failed');
@@ -236,5 +258,8 @@ export function deleteOne<T>(endpoint: string, body?: unknown): Promise<T> {
 
 /** Encode one path segment (ids, filenames, tag names). */
 export function seg(value: string): string {
+  if (value === '.' || value === '..') {
+    throw new InputValidationError('Holded path segment', ['Dot segments are not allowed']);
+  }
   return encodeURIComponent(value);
 }

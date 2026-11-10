@@ -9,7 +9,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import { getConfig, debug } from '../config.js';
+import { getBaseUrl, getConfig, debug } from '../config.js';
 import { textResponse } from '../tool-utils.js';
 import { CATEGORIES } from './shared.js';
 import { registerContactsTool } from './contacts.js';
@@ -29,7 +29,7 @@ import { registerRequestTool } from './request.js';
 import { registerResources } from '../resources/index.js';
 import { registerPrompts } from '../prompts/index.js';
 
-export const SERVER_VERSION = '3.0.0';
+export const SERVER_VERSION = '4.0.0';
 
 export function createServer(): McpServer {
   const server = new McpServer(
@@ -74,12 +74,13 @@ export function createServer(): McpServer {
 }
 
 export async function main(): Promise<void> {
-  // Fail fast on a missing or v1-shaped key instead of on the first tool call.
-  const config = getConfig();
+  // Allow discovery without credentials. Any API call still checks configuration
+  // before fetch, and an explicitly supplied v1 key remains a startup error.
+  const baseUrl = process.env.HOLDED_API_KEY ? getConfig().baseUrl : getBaseUrl();
   const server = createServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  debug(`MCP server running on stdio, base ${config.baseUrl}`);
+  debug(`MCP server running on stdio, base ${baseUrl}`);
 }
 
 // z is re-exported so tool modules and tests share one zod instance.

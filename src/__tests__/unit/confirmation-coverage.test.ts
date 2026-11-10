@@ -88,7 +88,7 @@ function destructiveActions(): { file: string; action: string; gated: boolean }[
     const source = readFileSync(path.join(toolsDir, file), 'utf8');
     for (const { action, body } of caseArms(source)) {
       const hits = destructive.some(fn => new RegExp(`\\bapi\\.${fn}\\s*\\(`).test(body));
-      if (!hits) continue;
+      if (!hits && !/\breadLocalFile\s*\(/.test(body)) continue;
       results.push({ file, action, gated: body.includes('checkConfirmation(') });
     }
   }

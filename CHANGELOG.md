@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-11-09
+
+### Security
+
+- Require confirmation for every raw write and accept only paths relative to the v2 API base. Pass URL parameters in the `query` field.
+- Preview local file uploads before reading them. Downloads require a new destination and cannot overwrite an existing file or symlink. API requests reject redirects.
+- Reject dot segments in typed IDs and credentials, queries and fragments in custom base URLs. Mask the configured token in text and JSON responses and remove upstream response bodies from debug logs.
+
+### Fixed
+
+- Enforce the request timeout through the response body, including PDF and other binary downloads.
+
+### Changed
+
+- Allow MCP initialization and tool discovery without a Holded key. Live API requests still require a valid v2 token.
+
 ## [3.0.0] - 2026-11-04
 
 ### Breaking changes
@@ -16,8 +32,6 @@ All notable changes to this project will be documented in this file. The format 
 - Remove the published Husky `prepare` lifecycle. Contributors enable hooks explicitly with `npm run setup:hooks`.
 - Clean obsolete build output before compiling; verify manifest entry points and reject lifecycle scripts, test material and nested archives in the actual tarball.
 - Enforce dependency audits and strict fresh-consumer checks in CI and release staging. Credential-free stdio checks cover initialization, all 15 tools, validation, discovery and shutdown.
-
-## [Unreleased]
 
 ## [2.1.1] - 2026-09-08
 

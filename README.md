@@ -13,11 +13,13 @@
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-brightgreen.svg)](https://nodejs.org/)
 [![npm version](https://img.shields.io/npm/v/@t4dhg/mcp-holded.svg)](https://www.npmjs.com/package/@t4dhg/mcp-holded)
 [![npm downloads](https://img.shields.io/npm/dm/@t4dhg/mcp-holded.svg)](https://www.npmjs.com/package/@t4dhg/mcp-holded)
+[![Official MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-2d6a4f)](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.t4dhg%2Fmcp-holded/versions/latest)
+[![t4dhg/mcp-holded MCP server](https://glama.ai/mcp/servers/t4dhg/mcp-holded/badges/score.svg)](https://glama.ai/mcp/servers/t4dhg/mcp-holded)
 [![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-green.svg)](https://modelcontextprotocol.io/)
 
 _A community project. Not affiliated with, endorsed by, or supported by Holded. "Holded" and the Holded logo are trademarks of their owner, used here to identify the API this server speaks to._
 
-An [MCP](https://modelcontextprotocol.io) server for the **Holded API v2**: contacts, sales and purchase documents, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks. Thirteen hierarchical tools with an `action` parameter, Zod validation of every request and response, retries on reads, and a confirmation gate on every destructive operation.
+An [MCP](https://modelcontextprotocol.io) server for the **Holded API v2**: contacts, sales and purchase documents, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks. The server runs locally over stdio with a personal access token. It groups operations into thirteen tools and includes prompts for aged receivables, VAT summaries, bank reconciliation and month-end close. For a hosted OAuth connection, see [Holded's own MCP server](https://www.holded.com/developers/mcp).
 
 Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys use the format `pat_<id>_<secret>` and only authenticate against **v2** (`https://api.holded.com/api/v2`, `Authorization: Bearer`). This server speaks v2 only.
 
@@ -27,12 +29,12 @@ Holded deprecated its classic API (`/api/invoicing/v1`, `key` header). New keys 
 - **Thirteen hierarchical tools with an `action` parameter**, not one tool per endpoint, so the tool list stays small in a model's context while covering contacts, sales, purchases, payments, treasury, accounting, catalog, team, CRM, projects, calendar, inbox and webhooks.
 - **Seven MCP resources and six MCP prompts.** The resources carry the account's own tax keys, numbering series, payment methods and chart of accounts, plus the API behaviour a schema cannot express. The prompts run the real workflows: aged receivables, VAT summary, bank reconciliation, statements, month-end close.
 - **A confirmation gate on every destructive operation**, with a structural test that keeps the documented list equal to the code. Nothing that deletes, overwrites, approves or emails goes through without `confirm: true`.
-- **Zod validation of every request and every response.** A shape the server has not seen surfaces as a clear schema error rather than a silent success.
-- **Over 200 tests against anonymised real v2 responses**, npm provenance via trusted publishing, and Node 20 or later.
+- **Zod validation for typed operations.** Unexpected response shapes surface as schema errors. The raw request tool deliberately returns the API response without schema validation.
+- **Tested with anonymised v2 responses and installed npm packages**, with npm provenance via trusted publishing and Node.js 20 or later.
 
-## How it compares
+## Historical comparison (September 2026)
 
-Four MCP servers for Holded exist on npm. This compares the published code of each, not their descriptions, as at **2026-09-08**: `@t4dhg/mcp-holded` 2.1.1, `@nubiia/mcp-holded` 2.0.2, `@energio/holded-mcp` 1.5.1 and `holded-mcp` 1.0.0. It is a snapshot and will age; check the current versions yourself before relying on it.
+This snapshot compares four packages as published on **2026-09-08**: `@t4dhg/mcp-holded` 2.1.1, `@nubiia/mcp-holded` 2.0.2, `@energio/holded-mcp` 1.5.1 and `holded-mcp` 1.0.0. For current installation requirements for this project, see [Quick start](#quick-start).
 
 |                              | `@t4dhg/mcp-holded`                                  | `@nubiia/mcp-holded`                                                             | `@energio/holded-mcp`                                       | `holded-mcp`                                                |
 | ---------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
@@ -51,8 +53,6 @@ Four MCP servers for Holded exist on npm. This compares the published code of ea
 | Last publish                 | 2026-09-08                                           | 2026-07-07                                                                       | 2026-07-01                                                  | 2026-02-25                                                  |
 
 <!-- Re-verify every cell against the rivals' published tarballs before editing this section. Do not edit a single cell without re-running the whole pass; a half-updated table is worse than a stale one. -->
-
-Where this differs most: the v1 servers are on an API Holded has deprecated, and new `pat_` tokens do not authenticate against it at all, so they cannot work with a newly issued key. Against `@nubiia/mcp-holded`, which is current, the differences are breadth (this server covers calendar and bookings, inbox, webhooks, and CRM leads and funnels, none of which appear in nubiia's tool list), the resource and prompt surface, the hierarchical tool shape, and a gated raw-request escape hatch. Nubiia's own Node floor is 22.14, genuinely higher than the 18 this server and `holded-mcp` both support.
 
 ## Quick start
 
@@ -112,19 +112,19 @@ Edit `.vscode/mcp.json`. Note the key is `servers`, not `mcpServers`:
 }
 ```
 
-Requires Node.js 20 or later. Development uses Node 24 (`nvm use`).
+Requires Node.js 20 or later. Development uses Node 24 (`nvm use`). A v2 token is required for live API calls. MCP clients can connect and list tools without one.
 
 Typed request collections accept at most 1,000 items, including nested collections. Existing lower API limits still apply (bank movement batches accept at most 100). A tool call may contain at most 10,000 combined array elements and object members, including arbitrary JSON payloads. Split larger operations into smaller calls.
 
 ### Environment variables
 
-| Variable             | Required | Default                         | Purpose                                                    |
-| -------------------- | -------- | ------------------------------- | ---------------------------------------------------------- |
-| `HOLDED_API_KEY`     | yes      | none                            | v2 Personal Access Token. A v1 key is rejected at startup. |
-| `HOLDED_BASE_URL`    | no       | `https://api.holded.com/api/v2` | Override the API base, for testing.                        |
-| `HOLDED_TIMEOUT_MS`  | no       | `30000`                         | Per-request timeout.                                       |
-| `HOLDED_MAX_RETRIES` | no       | `3`                             | Attempts for GET requests. Writes are never retried.       |
-| `DEBUG`              | no       | `false`                         | Log requests to stderr.                                    |
+| Variable             | Required | Default                         | Purpose                                                       |
+| -------------------- | -------- | ------------------------------- | ------------------------------------------------------------- |
+| `HOLDED_API_KEY`     | yes      | none                            | v2 Personal Access Token. A v1 key is rejected at startup.    |
+| `HOLDED_BASE_URL`    | no       | `https://api.holded.com/api/v2` | Test override. Omit credentials, query strings and fragments. |
+| `HOLDED_TIMEOUT_MS`  | no       | `30000`                         | Timeout per attempt, including reading the response body.     |
+| `HOLDED_MAX_RETRIES` | no       | `3`                             | Attempts for GET requests. Writes are never retried.          |
+| `DEBUG`              | no       | `false`                         | Log requests to stderr.                                       |
 
 ## What people use it for
 
@@ -216,11 +216,11 @@ Six MCP prompts run the workflows this server exists for. Each one pre-reads the
 
 ### Operations that require confirmation
 
-These actions delete, overwrite, lock or email something. Without `confirm: true` the tool sends nothing and explains what would happen; the same call with `confirm: true` proceeds. A structural test keeps this list equal to the gated actions in the code.
+These actions delete, overwrite, lock, email or upload something. Without `confirm: true` the tool sends nothing and explains what would happen; the same call with `confirm: true` proceeds. A structural test keeps this list equal to the gated actions in the code.
 
-- `holded_contacts({ action: 'update' })`, `holded_contacts({ action: 'delete' })`, `holded_contacts({ action: 'bulk_archive' })`, `holded_contacts({ action: 'bulk_delete' })`, `holded_contacts({ action: 'update_group' })`, `holded_contacts({ action: 'delete_group' })`
-- `holded_sales({ action: 'update' })`, `holded_sales({ action: 'delete' })`, `holded_sales({ action: 'approve' })` (assigns the legal number; irreversible under Verifactu), `holded_sales({ action: 'cancel' })`, `holded_sales({ action: 'send' })` (emails the customer), `holded_sales({ action: 'set_pipeline' })`, `holded_sales({ action: 'skip' })`, `holded_sales({ action: 'bulk_approve' })`, `holded_sales({ action: 'bulk_cancel' })`, `holded_sales({ action: 'bulk_delete' })`
-- `holded_purchases({ action: 'update' })`, `holded_purchases({ action: 'delete' })`, `holded_purchases({ action: 'approve' })`, `holded_purchases({ action: 'send' })`, `holded_purchases({ action: 'set_pipeline' })`
+- `holded_contacts({ action: 'update' })`, `holded_contacts({ action: 'delete' })`, `holded_contacts({ action: 'bulk_archive' })`, `holded_contacts({ action: 'bulk_delete' })`, `holded_contacts({ action: 'attach' })`, `holded_contacts({ action: 'update_group' })`, `holded_contacts({ action: 'delete_group' })`
+- `holded_sales({ action: 'update' })`, `holded_sales({ action: 'delete' })`, `holded_sales({ action: 'attach' })`, `holded_sales({ action: 'approve' })` (assigns the legal number; irreversible under Verifactu), `holded_sales({ action: 'cancel' })`, `holded_sales({ action: 'send' })` (emails the customer), `holded_sales({ action: 'set_pipeline' })`, `holded_sales({ action: 'skip' })`, `holded_sales({ action: 'bulk_approve' })`, `holded_sales({ action: 'bulk_cancel' })`, `holded_sales({ action: 'bulk_delete' })`
+- `holded_purchases({ action: 'update' })`, `holded_purchases({ action: 'delete' })`, `holded_purchases({ action: 'attach' })`, `holded_purchases({ action: 'approve' })`, `holded_purchases({ action: 'send' })`, `holded_purchases({ action: 'set_pipeline' })`
 - `holded_payments({ action: 'update' })`, `holded_payments({ action: 'delete' })`
 - `holded_treasury({ action: 'update_account' })`, `holded_treasury({ action: 'archive_account' })`, `holded_treasury({ action: 'delete_account' })`, `holded_treasury({ action: 'reconcile' })`, `holded_treasury({ action: 'update_forecast' })`, `holded_treasury({ action: 'delete_forecast' })`
 - `holded_accounting({ action: 'update_expenses_account' })`, `holded_accounting({ action: 'delete_expenses_account' })`, `holded_accounting({ action: 'update_sales_channel' })`, `holded_accounting({ action: 'delete_sales_channel' })`, `holded_accounting({ action: 'update_numbering_series' })`, `holded_accounting({ action: 'delete_numbering_series' })`, `holded_accounting({ action: 'delete_tag' })`
@@ -229,14 +229,16 @@ These actions delete, overwrite, lock or email something. Without `confirm: true
 - `holded_crm({ action: 'update_funnel' })`, `holded_crm({ action: 'delete_funnel' })`, `holded_crm({ action: 'update_lead' })`, `holded_crm({ action: 'delete_lead' })`, `holded_crm({ action: 'move_stage' })`, `holded_crm({ action: 'update_dates' })`, `holded_crm({ action: 'update_note' })`, `holded_crm({ action: 'update_task' })`, `holded_crm({ action: 'delete_task' })`
 - `holded_projects({ action: 'update_project' })`, `holded_projects({ action: 'delete_project' })`, `holded_projects({ action: 'update_task' })`, `holded_projects({ action: 'delete_task' })`, `holded_projects({ action: 'update_time' })`, `holded_projects({ action: 'delete_time' })`
 - `holded_calendar({ action: 'update_event' })`, `holded_calendar({ action: 'delete_event' })`, `holded_calendar({ action: 'update_booking' })`, `holded_calendar({ action: 'cancel_booking' })`
-- `holded_inbox({ action: 'update' })`, `holded_inbox({ action: 'attach' })`, `holded_inbox({ action: 'delete' })`
+- `holded_inbox({ action: 'upload' })`, `holded_inbox({ action: 'update' })`, `holded_inbox({ action: 'attach' })`, `holded_inbox({ action: 'delete' })`
 - `holded_webhooks({ action: 'update' })`, `holded_webhooks({ action: 'disable' })`, `holded_webhooks({ action: 'delete' })`
 
-Creates are not gated, including `record_payment`, `create_movements` and `create_ledger_entry`: they add records that can be deleted afterwards. The gate reduces accidents; it is not an authorization boundary, and the token grants whatever Holded grants it.
+Other named create actions, including `record_payment`, `create_movements` and `create_ledger_entry`, run without this confirmation step. The gate reduces accidents; it is not an authorization boundary, and the token grants whatever Holded grants it.
+
+An upload preview shows the local file path before the server reads or uploads the file. For PDF and inbox downloads, choose a new `output_path`; the server will not overwrite an existing file or follow a symlink at that path.
 
 ### The raw request tool
 
-`holded_request` reaches every v2 endpoint with correct Bearer auth and returns the response unvalidated. `DELETE`, `PUT` and `PATCH` require `confirm: true`, and so does a `POST` to any path containing `bulk`, `cancel`, `archive`, `approve`, `send`, `reconcile`, `ship`, `skip`, `clock-in` or `clock-out`, because Holded hides destructive operations behind those. The refused call returns the exact method, URL and body it would have sent.
+`holded_request` sends requests to Holded API v2 and returns the response without schema validation. Every raw write (`POST`, `PUT`, `PATCH` or `DELETE`) requires `confirm: true`. A call without confirmation returns a preview. Use a path such as `/contacts` relative to the v2 API base, and pass URL parameters in `query`. The tool rejects paths containing a query string, a fragment, dot segments or ambiguous separators. The HTTP client does not follow redirects.
 
 ## How the API really behaves
 
@@ -292,7 +294,7 @@ Every request is then logged to stderr. Never to stdout, which is the MCP transp
 
 **Are amounts safe to round-trip?** Yes. Amounts are strings and the server passes them through unchanged, so nothing is rounded. Be aware there are two conventions: documents and salary records use a comma, payments, treasury and accounting use a dot.
 
-**Can I reach an endpoint that has no dedicated action?** Yes, `holded_request` reaches any v2 path with correct auth. Destructive methods and paths are gated there too.
+**Can I reach an endpoint that has no dedicated action?** Yes, use `holded_request` with a path relative to the v2 API base. All raw writes require confirmation.
 
 **Is it affiliated with Holded?** No. It is a community project that speaks their public API.
 
@@ -307,6 +309,8 @@ HOLDED_API_KEY=pat_..._... npm run smoke:live   # spawns the built server over s
 ```
 
 Tests run against anonymised fixtures in `src/__tests__/fixtures`, each a real v2 response with names, tax ids, addresses, bank details and amounts replaced. Add a fixture when you add an endpoint; the schema test fails on any fixture without a schema.
+
+[CI](https://github.com/t4dhg/mcp-holded/actions/workflows/ci.yml) runs the unit suite with coverage, checks the npm tarball for unwanted files and install hooks, and audits a fresh installation before exercising its stdio command on Node.js 20, 22 and 24. These package checks use no live Holded credentials.
 
 ## Releasing
 

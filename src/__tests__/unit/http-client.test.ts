@@ -119,6 +119,19 @@ describe('http client', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('rejects upstream redirects without forwarding authenticated requests or bodies', async () => {
+    const fetchMock = stubFetch({
+      status: 307,
+      headers: { location: 'https://redirect.example/upload' },
+      text: '',
+    });
+    await expect(post('/contacts', { name: 'Example' })).rejects.toThrow(/redirect.*307/i);
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      'https://api.holded.test/api/v2/contacts',
+      expect.objectContaining({ redirect: 'manual', body: '{"name":"Example"}' })
+    );
+  });
+
   it('never retries a DELETE and returns undefined on an empty body', async () => {
     const fetchMock = stubFetch({ status: 204, text: '' });
     await expect(deleteOne('/contacts/abc')).resolves.toBeUndefined();
@@ -150,6 +163,53 @@ describe('http client', () => {
       )
     );
     await expect(holdedRequest('/slow', { timeout: 10 })).rejects.toBeInstanceOf(TimeoutError);
+  });
+
+  it('keeps the timeout active when the response headers arrive before the body', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (_url: string, request: RequestInit) => {
+          const signal = request.signal!;
+          return new Response(
+            new ReadableStream({
+              start(stream) {
+                const finish = setTimeout(() => {
+                  stream.enqueue(new TextEncoder().encode('{"done":true}'));
+                  stream.close();
+                }, 50);
+                signal.addEventListener(
+                  'abort',
+                  () => {
+                    clearTimeout(finish);
+                    stream.error(new DOMException('aborted', 'AbortError'));
+                  },
+                  { once: true }
+                );
+              },
+            })
+          );
+        })
+      );
+      const pending = holdedRequest('/slow-body', { timeout: 5, maxRetries: 1 }).catch(
+        error => error
+      );
+      await vi.advanceTimersByTimeAsync(51);
+      expect(await pending).toBeInstanceOf(TimeoutError);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('redacts reflected credentials in decoded JSON values and binary error bodies', async () => {
+    const configuredKey = process.env.HOLDED_API_KEY!;
+    stubFetch(
+      { text: `{"auth":"Bearer \\u0070${configuredKey.slice(1)}"}` },
+      { status: 403, body: { detail: `Rejected Bearer ${configuredKey}` } }
+    );
+    await expect(get('/raw')).resolves.toEqual({ auth: 'Bearer [REDACTED]' });
+    await expect(getBinary('/invoices/abc/pdf')).rejects.toThrow('Rejected Bearer [REDACTED]');
   });
 
   it('returns bytes for binary responses and rejects HTML there too', async () => {

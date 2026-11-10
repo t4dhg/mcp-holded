@@ -46,8 +46,11 @@ export function registerPurchasesTool(server: McpServer) {
           .enum(Object.keys(PURCHASE_TYPES) as [PurchaseType, ...PurchaseType[]])
           .default('purchase'),
         id: idArg,
-        output_path: z.string().optional(),
-        file_path: z.string().optional(),
+        output_path: z.string().optional().describe('New path to save the PDF without overwriting'),
+        file_path: z
+          .string()
+          .optional()
+          .describe('Local file to upload for attach (requires confirmation)'),
         pipeline_id: z.string().optional(),
         data: dataArg,
         confirm: confirmArg,
@@ -77,7 +80,7 @@ export function registerPurchasesTool(server: McpServer) {
           case 'get':
             return jsonResponse(await api.getDocument(type, requireArg(args.id, 'id')));
           case 'pdf':
-            return savePdf(
+            return await savePdf(
               await api.getDocumentPdf(type, requireArg(args.id, 'id')),
               requireArg(args.output_path, 'output_path')
             );
@@ -87,14 +90,16 @@ export function registerPurchasesTool(server: McpServer) {
               'attachment'
             );
           case 'attach': {
-            const file = await readLocalFile(requireArg(args.file_path, 'file_path'));
+            const id = requireArg(args.id, 'id');
+            const filePath = requireArg(args.file_path, 'file_path');
+            const gate = checkConfirmation('attach_document_file', args.confirm, {
+              filePath,
+              destination: `Holded ${type} ${id}`,
+            });
+            if (gate.needsConfirmation) return textResponse(gate.message);
+            const file = await readLocalFile(filePath);
             return jsonResponse(
-              await api.attachDocumentFile(
-                type,
-                requireArg(args.id, 'id'),
-                file.bytes,
-                file.filename
-              ),
+              await api.attachDocumentFile(type, id, file.bytes, file.filename),
               'File attached.'
             );
           }

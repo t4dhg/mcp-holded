@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -10,14 +10,14 @@ const entry = resolve(process.argv[2] ?? 'dist/index.js');
 const packageVersion = JSON.parse(
   readFileSync(resolve(dirname(realpathSync(entry)), '../package.json'), 'utf8')
 ).version;
+const env = {
+  PATH: process.env.PATH,
+  HOLDED_BASE_URL: 'http://127.0.0.1:1',
+  HOLDED_MAX_RETRIES: '0',
+};
 const server = spawn(process.execPath, [entry], {
   cwd: directory,
-  env: {
-    PATH: process.env.PATH,
-    HOLDED_API_KEY: 'pat_xxxxxxxx_xxxxxxxx',
-    HOLDED_BASE_URL: 'http://127.0.0.1:1',
-    HOLDED_MAX_RETRIES: '0',
-  },
+  env,
   stdio: ['pipe', 'pipe', 'pipe'],
 });
 const exited = new Promise((resolveExit, reject) => {
@@ -89,11 +89,26 @@ try {
   const discovered = await request('tools/call', { name: 'holded_discover', arguments: {} });
   assert.equal(discovered.result?.isError ?? false, false);
   assert.match(discovered.result?.content[0]?.text ?? '', /holded_contacts/);
+  const unauthenticated = await request('tools/call', {
+    name: 'holded_contacts',
+    arguments: { action: 'list' },
+  });
+  assert(unauthenticated.result?.isError);
+  assert.match(unauthenticated.result.content[0]?.text ?? '', /HOLDED_API_KEY is not set/);
   server.stdin.end();
   const shutdownTimeout = setTimeout(() => server.kill('SIGKILL'), 5000);
   const shutdown = await exited;
   clearTimeout(shutdownTimeout);
   assert.equal(shutdown.code, 0, `Server shutdown failed (${shutdown.signal}): ${stderr}`);
+  const legacy = spawnSync(process.execPath, [entry], {
+    cwd: directory,
+    env: { ...env, HOLDED_API_KEY: '0'.repeat(32) },
+    input: '',
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+  assert.equal(legacy.status, 1);
+  assert.match(legacy.stderr, /Classic v1 keys/);
   console.log(
     `MCP smoke passed on ${process.version}: initialize, discovery, validation and shutdown`
   );

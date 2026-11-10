@@ -30,9 +30,12 @@ export function registerInboxTool(server: McpServer) {
         start_date: z.string().optional(),
         end_date: z.string().optional(),
         user_id: z.string().optional(),
-        file_path: z.string().optional().describe('Local file to upload'),
+        file_path: z.string().optional().describe('Local file to upload (requires confirmation)'),
         filename: z.string().optional().describe('Stored filename for download'),
-        output_path: z.string().optional(),
+        output_path: z
+          .string()
+          .optional()
+          .describe('New path to save the file without overwriting'),
         data: dataArg,
         confirm: confirmArg,
         ...listArgs,
@@ -55,14 +58,20 @@ export function registerInboxTool(server: McpServer) {
           case 'get':
             return jsonResponse(await api.getInboxDocument(requireArg(args.id, 'id')));
           case 'upload': {
-            const file = await readLocalFile(requireArg(args.file_path, 'file_path'));
+            const filePath = requireArg(args.file_path, 'file_path');
+            const gate = checkConfirmation('upload_inbox_document', args.confirm, {
+              filePath,
+              destination: 'Holded inbox',
+            });
+            if (gate.needsConfirmation) return textResponse(gate.message);
+            const file = await readLocalFile(filePath);
             return jsonResponse(
               await api.uploadInboxDocument(file.bytes, file.filename),
               'Document uploaded.'
             );
           }
           case 'download':
-            return savePdf(
+            return await savePdf(
               await api.downloadInboxFile(
                 requireArg(args.id, 'id'),
                 requireArg(args.filename, 'filename')

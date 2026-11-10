@@ -46,7 +46,7 @@ export function registerTeamTool(server: McpServer) {
         end_date: z.string().optional(),
         kind: z.string().optional(),
         is_draft: z.boolean().optional(),
-        output_path: z.string().optional(),
+        output_path: z.string().optional().describe('New path to save the PDF without overwriting'),
         data: dataArg,
         confirm: confirmArg,
         ...listArgs,
@@ -87,7 +87,7 @@ export function registerTeamTool(server: McpServer) {
           case 'get_salary_record':
             return jsonResponse(await api.getSalaryRecord(requireArg(args.id, 'id')));
           case 'salary_record_pdf':
-            return savePdf(
+            return await savePdf(
               await api.getSalaryRecordPdf(requireArg(args.id, 'id')),
               requireArg(args.output_path, 'output_path')
             );
@@ -106,7 +106,7 @@ export function registerTeamTool(server: McpServer) {
           case 'get_payslip':
             return jsonResponse(await api.getPayslip(requireArg(args.id, 'id')));
           case 'payslip_pdf':
-            return savePdf(
+            return await savePdf(
               await api.getPayslipPdf(requireArg(args.id, 'id')),
               requireArg(args.output_path, 'output_path')
             );

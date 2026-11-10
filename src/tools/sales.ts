@@ -72,8 +72,11 @@ export function registerSalesTool(server: McpServer) {
           .optional()
           .describe('Invoice ids for bulk actions (maximum 1000)'),
         document_number: z.string().optional().describe('For find_by_number'),
-        output_path: z.string().optional().describe('Where to save the PDF'),
-        file_path: z.string().optional().describe('Local file to upload for attach'),
+        output_path: z.string().optional().describe('New path to save the PDF without overwriting'),
+        file_path: z
+          .string()
+          .optional()
+          .describe('Local file to upload for attach (requires confirmation)'),
         pipeline_id: z.string().optional(),
         date: z.string().optional().describe('Occurrence date for skip'),
         data: dataArg,
@@ -112,7 +115,7 @@ export function registerSalesTool(server: McpServer) {
               'invoice'
             );
           case 'pdf':
-            return savePdf(
+            return await savePdf(
               await api.getDocumentPdf(type, requireArg(args.id, 'id')),
               requireArg(args.output_path, 'output_path')
             );
@@ -122,14 +125,16 @@ export function registerSalesTool(server: McpServer) {
               'attachment'
             );
           case 'attach': {
-            const file = await readLocalFile(requireArg(args.file_path, 'file_path'));
+            const id = requireArg(args.id, 'id');
+            const filePath = requireArg(args.file_path, 'file_path');
+            const gate = checkConfirmation('attach_document_file', args.confirm, {
+              filePath,
+              destination: `Holded ${type} ${id}`,
+            });
+            if (gate.needsConfirmation) return textResponse(gate.message);
+            const file = await readLocalFile(filePath);
             return jsonResponse(
-              await api.attachDocumentFile(
-                type,
-                requireArg(args.id, 'id'),
-                file.bytes,
-                file.filename
-              ),
+              await api.attachDocumentFile(type, id, file.bytes, file.filename),
               'File attached.'
             );
           }

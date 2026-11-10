@@ -42,7 +42,7 @@ const POLICIES = {
     OperationRisk.CRITICAL,
     'Permanently deletes several contacts at once'
   ),
-  attach_contact_file: open(OperationRisk.LOW, 'Uploads a file to a contact'),
+  attach_contact_file: gated(OperationRisk.HIGH, 'Uploads a local file to a contact'),
   create_contact_group: open(OperationRisk.LOW, 'Creates a contact group'),
   update_contact_group: gated(OperationRisk.MEDIUM, 'Overwrites a contact group'),
   delete_contact_group: gated(OperationRisk.HIGH, 'Permanently deletes a contact group'),
@@ -58,7 +58,7 @@ const POLICIES = {
   cancel_document: gated(OperationRisk.HIGH, 'Cancels the document'),
   send_document: gated(OperationRisk.HIGH, 'Emails the document to the recipients'),
   record_document_payment: open(OperationRisk.MEDIUM, 'Registers a payment against the document'),
-  attach_document_file: open(OperationRisk.LOW, 'Uploads a file to a document'),
+  attach_document_file: gated(OperationRisk.HIGH, 'Uploads a local file to a document'),
   set_document_pipeline: gated(OperationRisk.MEDIUM, 'Overwrites the document pipeline stage'),
   convert_document: open(OperationRisk.MEDIUM, 'Creates a new document from an existing one'),
   accept_estimate: open(OperationRisk.MEDIUM, 'Marks an estimate as accepted'),
@@ -173,7 +173,10 @@ const POLICIES = {
   cancel_booking: gated(OperationRisk.HIGH, 'Cancels the booking'),
 
   // Inbox
-  upload_inbox_document: open(OperationRisk.MEDIUM, 'Uploads a document to the inbox for scanning'),
+  upload_inbox_document: gated(
+    OperationRisk.HIGH,
+    'Uploads a local file to the inbox for scanning'
+  ),
   update_inbox_document: gated(OperationRisk.MEDIUM, 'Overwrites the inbox document draft'),
   attach_inbox_document: gated(
     OperationRisk.MEDIUM,
@@ -191,7 +194,7 @@ const POLICIES = {
   // Raw escape hatch
   raw_destructive_request: gated(
     OperationRisk.CRITICAL,
-    'DELETE, PUT, PATCH, or a POST to a bulk, cancel, archive, approve, send or reconcile path'
+    'Sends a raw POST, PUT, PATCH or DELETE request to the Holded API'
   ),
 } satisfies Record<string, OperationPolicy>;
 

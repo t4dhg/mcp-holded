@@ -18,7 +18,7 @@ export const IRREVERSIBLE_URI = 'holded://guide/irreversible-operations';
 
 const PREAMBLE = `# Operations that require confirmation
 
-Every operation below deletes, overwrites, locks or emails something. Calling one without \`confirm: true\` sends nothing: the tool returns what it would have done. The same call with \`confirm: true\` proceeds.
+The operations below include changes to Holded data and transfers of local files. Calling one without \`confirm: true\` sends nothing: the tool returns what it would have done. The same call with \`confirm: true\` proceeds.
 
 ## Read this before approving a sales document
 

@@ -29,6 +29,18 @@ describe('config', () => {
     expect(getBaseUrl()).toBe('https://example.test/v2');
   });
 
+  it.each([
+    'https://fixture-user:fixture-value@example.test/v2',
+    'https://example.test/v2?mode=test',
+    'https://example.test/v2#section',
+    'file:///tmp/holded',
+  ])('rejects invalid base URL overrides without echoing them', override => {
+    vi.stubEnv('HOLDED_BASE_URL', override);
+    expect(() => getBaseUrl()).toThrow(
+      /^HOLDED_BASE_URL must be an HTTP\(S\) URL without credentials, a query, or a fragment\.$/
+    );
+  });
+
   it('reads numeric settings and rejects garbage', () => {
     vi.stubEnv('HOLDED_API_KEY', 'pat_x_y');
     vi.stubEnv('HOLDED_TIMEOUT_MS', '5000');

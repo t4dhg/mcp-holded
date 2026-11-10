@@ -27,9 +27,10 @@ What to expect:
 This project is an MCP server that talks to the Holded API v2 on behalf of whoever runs it. Holded is a live accounting system, so the following are in scope:
 
 - Any tool action listed under "Operations that require confirmation" in the README executing without `confirm: true`, or a destructive API call reachable from a tool action that is not on that list. A structural test (`confirmation-coverage.test.ts`) is meant to make this impossible; a way around it is a vulnerability.
-- `holded_request` sending a `DELETE`, `PUT`, `PATCH`, or a `POST` to a bulk, cancel, archive, approve, send, reconcile, ship, skip or clock path without `confirm: true`
+- `holded_request` sending a `POST`, `PUT`, `PATCH`, or `DELETE` without `confirm: true`, or accepting a path that escapes the configured API prefix
 - Leaking the API key into logs, error messages, or tool responses
-- Any way for a tool argument to reach a host other than the configured Holded base URL, or to read or write a local file other than the one named in `file_path` or `output_path`
+- Any way for a tool argument to reach a host other than the configured Holded base URL, including through a redirect
+- Reading a file for upload without `confirm: true`, or overwriting an existing file through `output_path`
 
 Out of scope:
 
@@ -42,5 +43,5 @@ Releases are staged by CI through npm trusted publishing (OIDC, no long-lived to
 
 ## Operational notes
 
-- The API key grants whatever the Holded API grants it. Keep it in your MCP client's `env` block and never commit it. `.mcp.json` and `.env*` are git-ignored here.
+- The API key grants whatever the Holded API grants it. Keep it in your MCP client's `env` block and never commit it. `.mcp.json` and `.env*` are git-ignored here. The server can start and list its tools without a key. It checks for the key before sending an API request.
 - The server stores nothing and logs only to stderr, and only when `DEBUG=true`. The key is never logged.

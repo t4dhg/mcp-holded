@@ -45,20 +45,24 @@ export const CATEGORIES: Record<string, { name: string; description: string }> =
   webhooks: { name: 'Webhooks', description: 'Webhooks, event catalogue and API usage' },
   request: {
     name: 'Raw request',
-    description: 'Any v2 endpoint, with a gate on destructive calls',
+    description: 'Any v2 endpoint, with confirmation required for writes',
   },
 };
 
 /** Gate a high-risk operation. Missing policy entries fail the build because `OperationName` is a closed union. */
 export function checkConfirmation(
   operation: OperationName,
-  confirm?: boolean
+  confirm?: boolean,
+  upload?: { filePath: string; destination: string }
 ): { needsConfirmation: true; message: string } | { needsConfirmation: false } {
   const policy = getOperationPolicy(operation);
   if (policy.requiresConfirmation && confirm !== true) {
+    const details = upload
+      ? `\nLocal file: ${JSON.stringify(resolve(upload.filePath))}\nDestination: ${JSON.stringify(upload.destination)}`
+      : '';
     return {
       needsConfirmation: true,
-      message: `${getWarningMessage(operation)}\n\nTo proceed, call this tool again with the same arguments and \`confirm: true\`.`,
+      message: `${getWarningMessage(operation)}${details}\n\nTo proceed, call this tool again with the same arguments and \`confirm: true\`.`,
     };
   }
   return { needsConfirmation: false };
@@ -103,7 +107,8 @@ export function data<T extends z.ZodTypeAny>(
 
 export async function savePdf(bytes: Uint8Array, outputPath: string): Promise<ToolResult> {
   const target = resolve(outputPath);
-  await writeFile(target, bytes);
+  // Exclusive creation refuses both existing files and symlinks at the output path.
+  await writeFile(target, bytes, { flag: 'wx', mode: 0o600 });
   return jsonResponse({ path: target, bytes: bytes.byteLength }, 'PDF saved.');
 }
 
